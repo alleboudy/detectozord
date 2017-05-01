@@ -6,7 +6,7 @@ using namespace std;
 int main(int argc, char* argv[])
 {
 	// File path for input image
-	std::string projectSrcDir = "C:\\Users\\ahmad\\Downloads\\exercise1";
+	std::string projectSrcDir = PROJECT_SOURCE_DIR;
 	std::string inputImagePath = projectSrcDir + "/Data/serval.png";
 	string outputGrayImgPath = projectSrcDir + "/Data/several_gray.png";
 
