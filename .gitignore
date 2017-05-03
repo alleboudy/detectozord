@@ -273,3 +273,14 @@ __pycache__/
 
 # Cake - Uncomment if you are using it
 # tools/
+
+# further files
+settings.json
+.vscode
+bin
+CMakeFiles
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+imgSubtracted.png
+several_gray.png

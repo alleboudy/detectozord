@@ -8,17 +8,24 @@ int main(int argc, char* argv[])
 	// File path for input image
 	std::string projectSrcDir = PROJECT_SOURCE_DIR;
 	std::string inputImagePath = projectSrcDir + "/Data/serval.png";
-	string outputGrayImgPath = projectSrcDir + "/Data/several_gray.png";
+	string outputGrayImgPath = projectSrcDir + "/Data/serval_gray.png";
 
 	//// Task 1: Basisc //////////////////////////////////////////////////
 	// Step 1: Load image using cv::imread
-	Mat img = imread(inputImagePath, CV_LOAD_IMAGE_COLOR);
+	 // second argument: specifiy image color (1=color, 0=gray)
+    // or: CV_LOAD_IMAGE_COLOR, CV_LOAD_IMAGE_GRAYSCALE
+    Mat img = imread(inputImagePath, CV_LOAD_IMAGE_COLOR);
+    if (!img.data)
+    {
+        cout << "Could not open or find the image";
+        return -1;
+    }
 	// Step 2: Display image using cv::imshow
 	imshow("img", img);
 	waitKey();
 	// Step 3: Convert to gray image using cv::cvtColor function
 	Mat imggray;
-	cvtColor(img, imggray, CV_BGR2GRAY);
+	cvtColor(img, imggray, CV_RGB2GRAY);
 	// Step 4: Save gray image by using cv::imwrite
 	imwrite(outputGrayImgPath, imggray);
 
@@ -46,8 +53,10 @@ int main(int argc, char* argv[])
 
 	}
 
-	//Shortcut:
+	//1. Shortcut:
 	//bitwise_not(img, inverted);
+	//2. Shortcut:
+	// inverted = cv::Scalar::all(255) - img;
 	// Step 2: Show the result
 	imshow("inverted", inverted);
 	waitKey();
@@ -58,6 +67,8 @@ int main(int argc, char* argv[])
 	// Step 1: Apply mean filter and show the reuslt
 	Mat meanF;
 	boxFilter(img, meanF, -1, Size(5, 5));
+	// alternatively:
+	// blur( img, meanF, Size( 9, 9 ), Point(-1,-1) );
 	imshow("mean filter", meanF);
 	waitKey();
 
@@ -69,7 +80,7 @@ int main(int argc, char* argv[])
 
 	// Step 3: Apply Bilateral filter and show the reuslt
 	Mat bilateral;
-	bilateralFilter(img, bilateral, 5, 5, 5);
+	bilateralFilter(img, bilateral, 15, 80, 80);
 	imshow("bilateral", bilateral);
 	waitKey();
 
@@ -82,7 +93,9 @@ int main(int argc, char* argv[])
 	Mat imga = imread(inputImagePathA, CV_LOAD_IMAGE_COLOR);
 	Mat imgb = imread(inputImagePathB, CV_LOAD_IMAGE_COLOR);
 	// Step 2: Subtract images and save the result
-	imshow("subtracted", Vec3b(255, 255, 255) - abs(imgb - imga));
+	Mat imgSubtracted = Vec3b(255, 255, 255) - abs(imgb - imga);
+	imshow("subtracted",imgSubtracted );
+	imwrite("imgSubtracted.png",imgSubtracted);
 	waitKey();
 
 	return 0;
