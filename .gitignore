@@ -282,6 +282,10 @@ CMakeFiles
 CMakeCache.txt
 Makefile
 cmake_install.cmake
-imgSubtracted.png
+
+# exercise1
 several_gray.png
+imgSubtracted.png
+
+# exercise2
 main.1.cpp
