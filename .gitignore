@@ -284,3 +284,4 @@ Makefile
 cmake_install.cmake
 imgSubtracted.png
 several_gray.png
+main.1.cpp
