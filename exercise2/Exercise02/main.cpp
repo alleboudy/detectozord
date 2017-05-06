@@ -2,7 +2,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/features2d.hpp>
 
-int THRESHOLD = 20;
+int THRESHOLD = 5;
 
 using namespace std;
 using namespace cv;
@@ -169,8 +169,8 @@ int main(int argc, char *argv[])
 {
 	string projectSrcDir = PROJECT_SOURCE_DIR;
 	// Load images
-	Mat imgObj = imread(projectSrcDir + "/Data/chocolate3.jpg");
-	Mat arObj = imread(projectSrcDir + "/Data/chocolate1.png");
+	Mat imgObj = imread(projectSrcDir + "/Data/chocolate3.jpg"); // template we are searching for.
+	Mat arObj = imread(projectSrcDir + "/Data/chocolate1.png"); // image that will be in the place of the template.
 	Mat imgScene = imread(projectSrcDir + "/Data/chocolate_scene.png");
 	imshow("scene image", detectChocolate(imgObj, imgScene, arObj, true));
 
@@ -182,6 +182,7 @@ int main(int argc, char *argv[])
 		cout << "Cannot open the video file" << endl;
 		return -1;
 	}
+
 	do
 	{
 		imgScene.release(); // will free memory
