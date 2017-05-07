@@ -1,8 +1,9 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/features2d.hpp>
-
-int THRESHOLD = 5;
+#include <thread>
+#include <chrono>
+int THRESHOLD = 20;
 
 using namespace std;
 using namespace cv;
@@ -53,7 +54,7 @@ void drawHomographyRect(Size imgObjSize, Mat &homography, Mat &imgMatches, bool 
 }
 
 /**
-* @brief given a template image, a scene and a replacement image, this function matches the 
+* @brief given a template image, a scene and a replacement image, this function matches the
 *        template in the scene and replaces it with the replacement
 * @param [in]    imgObj: A template to match for
 * @param [in]    imgScene: image where we match for the template
@@ -117,14 +118,14 @@ Mat detectChocolate(Mat imgObj, Mat imgScene, Mat arObj, bool showSteps = false)
 	cout << "determinant of the homography: " << determinant(homography) << endl;
 
 	// Step c)2: Display inlier matches
-	vector<KeyPoint> filteredKPObj, filteredKPScene;
+	//vector<KeyPoint> filteredKPObj, filteredKPScene;
 	vector<DMatch> matchesFiltered;
 	for (int i = 0; i < masks.rows; i++)
 	{
 		if ((unsigned int)masks.at<uchar>(i))
 		{
-			filteredKPObj.push_back(keypointsObj[i]);
-			filteredKPScene.push_back(keypointsScene[i]);
+			//filteredKPObj.push_back(keypointsObj[i]);
+			//filteredKPScene.push_back(keypointsScene[i]);
 			matchesFiltered.push_back(matches[i]);
 		}
 	}
@@ -133,7 +134,8 @@ Mat detectChocolate(Mat imgObj, Mat imgScene, Mat arObj, bool showSteps = false)
 	// if the amount of inlier keypoints is less than the treshold
 	// then quit and return unchanged image
 	// otherwise we continue with the replacement process
-	if (filteredKPObj.size() < THRESHOLD)
+	cout << "numberof matches afterfiltering: " << matchesFiltered.size() << endl;
+	if (matchesFiltered.size() < THRESHOLD)
 	{
 		return imgScene;
 	}
@@ -169,10 +171,11 @@ int main(int argc, char *argv[])
 {
 	string projectSrcDir = PROJECT_SOURCE_DIR;
 	// Load images
-	Mat imgObj = imread(projectSrcDir + "/Data/chocolate3.jpg"); // template we are searching for.
-	Mat arObj = imread(projectSrcDir + "/Data/chocolate1.png"); // image that will be in the place of the template.
+	Mat imgObj = imread(projectSrcDir + "/Data/chocolate1.png"); // template we are searching for.
+	Mat arObj = imread(projectSrcDir + "/Data/chocolate2.png"); // image that will be in the place of the template.
 	Mat imgScene = imread(projectSrcDir + "/Data/chocolate_scene.png");
 	imshow("scene image", detectChocolate(imgObj, imgScene, arObj, true));
+	waitKey();
 
 	// Step e: Implement live demo for the object detector, using web-camera
 	VideoCapture cap;
@@ -203,7 +206,9 @@ int main(int argc, char *argv[])
 		catch (Exception)
 		{
 			cout << "Aborting process. Problem with frame occured." << endl;
-			imshow("original scene", imgScene);
+			imshow("scene image", imgScene);
+
+
 			continue;
 		}
 
