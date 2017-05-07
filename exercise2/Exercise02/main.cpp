@@ -8,7 +8,7 @@ int THRESHOLD = 20;
 using namespace std;
 using namespace cv;
 
-vector<Point2d> getHomographicTransformedPoints(Size imgObjSize, Mat homography)
+vector<Point2d> getHomographicTransformedPoints(Size imgObjSize, Mat &homography)
 {
 	// define object corners in the object image
 	vector<Point2d> cornersObj(4);
@@ -50,6 +50,7 @@ void drawHomographyRect(Size imgObjSize, Mat &homography, Mat &imgMatches, bool 
 	{
 		imshow("imgScene", imgMatches);
 		waitKey();
+		cvDestroyWindow("imgScene");
 	}
 }
 
@@ -79,11 +80,14 @@ Mat detectChocolate(Mat imgObj, Mat imgScene, Mat arObj, bool showSteps = false)
 		drawKeypoints(imgObj, keypointsObj, outObj);
 		imshow("outObj", outObj);
 		waitKey();
+		cvDestroyWindow("outObj");
 
 		drawKeypoints(imgScene, keypointsScene, outScene);
 
 		imshow("outScene", outScene);
 		waitKey();
+		cvDestroyWindow("outScene");
+
 	}
 
 	// Step b)1: Match descriptors
@@ -102,6 +106,8 @@ Mat detectChocolate(Mat imgObj, Mat imgScene, Mat arObj, bool showSteps = false)
 		drawMatches(imgObj, keypointsObj, imgScene, keypointsScene, matches, imgMatches);
 		imshow("imgMatches", imgMatches);
 		waitKey();
+		cvDestroyWindow("imgMatches");
+
 	}
 	// Step c)1: Compute homography with RANSAC
 	Mat masks;
@@ -146,6 +152,8 @@ Mat detectChocolate(Mat imgObj, Mat imgScene, Mat arObj, bool showSteps = false)
 		drawMatches(imgObj, keypointsObj, imgScene, keypointsScene, matchesFiltered, imgMatchesFiltered);
 		imshow("imgMatchesFiltered", imgMatchesFiltered);
 		waitKey();
+		cvDestroyWindow("imgMatchesFiltered");
+
 		// Step c)3: Display object rectangle in the scene using drawHomographyRect()
 		drawHomographyRect(Size(imgObj.cols, imgObj.rows), homography, imgMatchesFiltered, showSteps);
 	}
@@ -162,7 +170,7 @@ Mat detectChocolate(Mat imgObj, Mat imgScene, Mat arObj, bool showSteps = false)
 	{
 		cornersPoint.push_back(Point((int)cornersScene[i].x, (int)cornersScene[i].y));
 	}
-
+	
 	fillConvexPoly(imgScene, cornersPoint, 4, 0);
 	return resultImg | imgScene;
 }
@@ -176,6 +184,8 @@ int main(int argc, char *argv[])
 	Mat imgScene = imread(projectSrcDir + "/Data/chocolate_scene.png");
 	imshow("scene image", detectChocolate(imgObj, imgScene, arObj, true));
 	waitKey();
+	cvDestroyWindow("scene image");
+
 
 	// Step e: Implement live demo for the object detector, using web-camera
 	VideoCapture cap;
