@@ -62,7 +62,7 @@ void drawHomographyRect(Size imgObjSize, Mat &homography, Mat &imgMatches, bool 
 * @param [in]    showSteps: showing all steps in the process (for debugging)
   @param [out]   imgScene: The result of the match process and the replacement
 */
-Mat detectChocolate(Mat imgObj, Mat imgScene, Mat arObj, bool showSteps = false)
+void detectChocolate(Mat imgObj, Mat &imgScene, Mat arObj, bool showSteps = false)
 {
 
 	Mat outObj;
@@ -121,8 +121,14 @@ Mat detectChocolate(Mat imgObj, Mat imgScene, Mat arObj, bool showSteps = false)
 	}
 
 	Mat homography = findHomography(objPoints, scenePoints, RANSAC, 3.0, masks);
-	cout << "determinant of the homography: " << determinant(homography) << endl;
+	double homodet = determinant(homography);
+	cout << "determinant of the homography: " << homodet << endl;
+	if (homodet<0)
+	{
+		
+		return;
 
+	}
 	// Step c)2: Display inlier matches
 	//vector<KeyPoint> filteredKPObj, filteredKPScene;
 	vector<DMatch> matchesFiltered;
@@ -143,7 +149,7 @@ Mat detectChocolate(Mat imgObj, Mat imgScene, Mat arObj, bool showSteps = false)
 	cout << "numberof matches afterfiltering: " << matchesFiltered.size() << endl;
 	if (matchesFiltered.size() < THRESHOLD)
 	{
-		return imgScene;
+		return;
 	}
 
 	if (showSteps)
@@ -172,7 +178,8 @@ Mat detectChocolate(Mat imgObj, Mat imgScene, Mat arObj, bool showSteps = false)
 	}
 	
 	fillConvexPoly(imgScene, cornersPoint, 4, 0);
-	return resultImg | imgScene;
+	imgScene = imgScene | resultImg;
+	//return resultImg | imgScene;
 }
 
 int main(int argc, char *argv[])
@@ -182,7 +189,8 @@ int main(int argc, char *argv[])
 	Mat imgObj = imread(projectSrcDir + "/Data/chocolate1.png"); // template we are searching for.
 	Mat arObj = imread(projectSrcDir + "/Data/chocolate2.png"); // image that will be in the place of the template.
 	Mat imgScene = imread(projectSrcDir + "/Data/chocolate_scene.png");
-	imshow("scene image", detectChocolate(imgObj, imgScene, arObj, true));
+	detectChocolate(imgObj, imgScene, arObj, true);
+	imshow("scene image", imgScene);
 	waitKey();
 	cvDestroyWindow("scene image");
 
@@ -211,7 +219,8 @@ int main(int argc, char *argv[])
 		// last parameter: show steps (true/false)
 		try
 		{
-			imshow("scene image", detectChocolate(imgObj, imgScene, arObj));
+			detectChocolate(imgObj, imgScene, arObj);
+			imshow("scene image", imgScene);
 		}
 		catch (Exception)
 		{
