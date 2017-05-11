@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-
 import os
 import urllib.request
 import tarfile
@@ -140,3 +139,6 @@ def buildNetwork(inputs, batch_size, NUM_CLASSES=10):
     logits = linear_layer(x, num_outputs=NUM_CLASSES)
 
     return logits
+
+
+
