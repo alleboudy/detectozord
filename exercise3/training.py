@@ -78,7 +78,12 @@ accuracy = tf.reduce_mean(correct_mask)
 # TODO define the learning rate
 learningRate = 1
 # TODO define the optimizer (experiment with different options)
-opt = tf.train.GradientDescentOptimizer(learning_rate=learningRate)
+opt = tf.train.AdamOptimizer( learning_rate=learningRate,
+    beta1=0.9,
+    beta2=0.999,
+    epsilon=1e-08,
+    use_locking=False,
+    name='Adam')
 # TODO build the corresponding training operation
 opt_op = opt.minimize(loss)
 
