@@ -1,14 +1,14 @@
 import numpy as np
 import tensorflow as tf
-%matplotlib inline
-import matplotlib.pyplot as plt
+#%matplotlib inline
+#import matplotlib.pyplot as plt
 import random
 import os
 import urllib.request
 import tarfile
 import pickle
 import utils
-from utils import buildNetwork, load_cifar,download_cifar
+from utils import buildNetwork, load_cifar
 
 # URL for the data-set on the internet.
 data_path = "data/CIFAR-10/"
@@ -18,22 +18,21 @@ data_url = "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
 # Let's start a Session
 sess = tf.Session()
 
-
-
-download_cifar(data_path, data_url)
+#load_cifar('data/CIFAR-10/'')
 
 
 train_samples, train_labels, val_samples, val_labels = load_cifar(data_path)
 
 
-
 label_to_name = ['airplane', 'automobile', 'bird', 'cat', 'deer' , 'dog', 'frog', 'horse', 'ship', 'truck']
 indeces = random.sample(range(0, train_samples.shape[0]), 5)
 # TODO plot 5 training samples
-for index in indeces:
-    plt.figure(figsize=(1.5,1.5))
-    plt.title(label_to_name[train_labels[index]])
-    plt.imshow(train_samples[index])
+#for index in indeces:
+#    plt.figure(figsize=(1.5,1.5))
+#    plt.title(label_to_name[train_labels[index]])
+#    plt.imshow(train_samples[index])
+
+
 
 
 HEIGHT = 32
@@ -44,7 +43,7 @@ NUM_CLASSES = 10
 # You can also modify these hyper-parameters (batch_size, epochs)
 # e.g. Add more epochs, if not converged. Reduce batch_size if too big for your GPU memory
 batch_size = 50  
-num_train_epochs = 10
+num_train_epochs = 100
 steps_per_epoch = int( train_samples.shape[0] / batch_size)
 
 
@@ -76,15 +75,12 @@ predictions = tf.to_int32(tf.argmax(logits, axis=1))
 correct_mask = tf.to_float(tf.equal(predictions, labels))
 accuracy = tf.reduce_mean(correct_mask)
 
-
-
 # TODO define the learning rate
 learningRate = 0.1
 # TODO define the optimizer (experiment with different options)
 opt = tf.train.GradientDescentOptimizer(learning_rate=learningRate)
 # TODO build the corresponding training operation
 opt_op = opt.minimize(loss)
-
 
 # Define summary operations. Note, that the names may vary depending on how you defined variables!
 
@@ -101,13 +97,9 @@ val_summary_op = tf.summary.scalar('val_accuracy', val_accuracy)
 # our summary representations to disk.
 writer = tf.summary.FileWriter('log')
 
-
-
 # TODO use the variables initializer to build the operation and run it in the current session (named sess)
 model = tf.global_variables_initializer()
 sess.run(model)
-
-
 
 
 def gen_data(source,indices):
@@ -127,7 +119,11 @@ def gen_data_batch(source,batchSize,samples_indices):
         for _ in range(batchSize):
             img, label = next(data_gen)
             images_batch.append(img)
+            #plt.figure(figsize=(1.5,1.5))
+            #plt.title(label_to_name[label])
+            #plt.imshow(img)
             labels_batch.append(label)
+        #print("batch served!")
         yield np.array(images_batch),np.asarray(labels_batch)
 
 
@@ -143,7 +139,7 @@ for epoch in range(num_train_epochs):
     
     # TODO randomly shuffle training samples
     random.shuffle(samples_indices)
-    for iter in range(steps_per_epoch):
+    for iteration in range(steps_per_epoch):
         #print('iter')
         #print(iter)
         # TODO read the batch and execute one iteration of the graph 
@@ -163,10 +159,9 @@ for epoch in range(num_train_epochs):
     # TODO every epoch: 
     #     save the current validation accuracy to tensorboard
     # Note: we are interested in the accuracy over the *entire* validation set, not just the current batch
-
-
 # TODO use tf.train.Saver to save the trained model as checkpoints/model.ckpt
 #{'tvars': tvars}
 saver = tf.train.Saver()
 saver.save(sess, 'checkpoints/model.ckpt')
+
 
