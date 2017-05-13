@@ -4,7 +4,7 @@ import tensorflow as tf
 #import matplotlib.pyplot as plt
 import random
 import os
-import urllib.request
+#import urllib.request
 import tarfile
 import pickle
 import utils
@@ -76,7 +76,7 @@ correct_mask = tf.to_float(tf.equal(predictions, labels))
 accuracy = tf.reduce_mean(correct_mask)
 
 # TODO define the learning rate
-learningRate = 0.1
+learningRate = 1
 # TODO define the optimizer (experiment with different options)
 opt = tf.train.GradientDescentOptimizer(learning_rate=learningRate)
 # TODO build the corresponding training operation
@@ -134,7 +134,7 @@ num_steps_per_train_summary = 25
 samples_indices = list(range(train_samples.shape[0]))
 for epoch in range(num_train_epochs):
     #print("epoch")
-    #print(epoch)
+    print(epoch)
     
     
     # TODO randomly shuffle training samples
@@ -145,7 +145,9 @@ for epoch in range(num_train_epochs):
         # TODO read the batch and execute one iteration of the graph 
         Xs,Ys = next(gen_data_batch([train_samples,train_labels],batch_size,samples_indices))
             
-        summary  =  sess.run(opt_op, feed_dict={inputs: Xs, labels: Ys})
+	__, summary, _  =  sess.run([loss, train_summary_op, opt_op], feed_dict={inputs: Xs, labels: Ys})
+#	print(epoch)
+	#print(summary)
 
     
     
