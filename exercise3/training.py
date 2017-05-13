@@ -43,7 +43,7 @@ NUM_CLASSES = 10
 # You can also modify these hyper-parameters (batch_size, epochs)
 # e.g. Add more epochs, if not converged. Reduce batch_size if too big for your GPU memory
 batch_size = 50  
-num_train_epochs = 30
+num_train_epochs = 20
 steps_per_epoch = int( train_samples.shape[0] / batch_size)
 
 
@@ -76,7 +76,7 @@ correct_mask = tf.to_float(tf.equal(predictions, labels))
 accuracy = tf.reduce_mean(correct_mask)
 
 # TODO define the learning rate
-learningRate = .1
+learningRate=1
 # TODO define the optimizer (experiment with different options)
 opt = tf.train.AdamOptimizer( learning_rate=learningRate,
     beta1=0.9,
@@ -107,16 +107,21 @@ model = tf.global_variables_initializer()
 sess.run(model)
 
 
-def gen_data(source,indices):
+def gen_data(source):
+    indices = range(len(source[0]))
+    random.shuffle(indices)
+
     while True:
+	#indices = range(len(source[0]))
+	#random.shuffle(indices)
         for i in indices:
             image = source[0][i]
             label = source[1][i]
             yield image, label
 
 
-def gen_data_batch(source,batchSize,samples_indices):
-    data_gen = gen_data(source,samples_indices)
+def gen_data_batch(source,batchSize):
+    data_gen = gen_data(source)
     #for i in range(numberOfBatches):
     while(True):
         images_batch = []
@@ -136,20 +141,21 @@ def gen_data_batch(source,batchSize,samples_indices):
 num_steps_per_train_summary = 25  
 
 # TODO run num_train_steps iterations on the training samples each of batchsize 50
-samples_indices = list(range(train_samples.shape[0]))
+#samples_indices = list(range(train_samples.shape[0]))
 for epoch in range(num_train_epochs):
     #print("epoch")
-    print(epoch)
+    print('epoch #'+str(epoch))
     
     
     # TODO randomly shuffle training samples
-    random.shuffle(samples_indices)
+    #random.shuffle(samples_indices)
     for iteration in range(steps_per_epoch):
         #print('iter')
         #print(iter)
         # TODO read the batch and execute one iteration of the graph 
-        Xs,Ys = next(gen_data_batch([train_samples,train_labels],batch_size,samples_indices))
-            
+        Xs,Ys = next(gen_data_batch([train_samples,train_labels],batch_size))
+        print('\r')
+	print(Ys)    
         __, summary, _  =  sess.run([loss, train_summary_op, opt_op], feed_dict={inputs: Xs, labels: Ys})
 #	print(epoch)
 	#print(summary)
