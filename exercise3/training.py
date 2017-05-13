@@ -145,7 +145,7 @@ for epoch in range(num_train_epochs):
         # TODO read the batch and execute one iteration of the graph 
         Xs,Ys = next(gen_data_batch([train_samples,train_labels],batch_size,samples_indices))
             
-	__, summary, _  =  sess.run([loss, train_summary_op, opt_op], feed_dict={inputs: Xs, labels: Ys})
+        __, summary, _  =  sess.run([loss, train_summary_op, opt_op], feed_dict={inputs: Xs, labels: Ys})
 #	print(epoch)
 	#print(summary)
 
