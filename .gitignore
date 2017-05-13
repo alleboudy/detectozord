@@ -294,4 +294,5 @@ main.1.cpp
 .ipynb_checkpoints/
 __pycache__/
 data/
-#log/
+log/
+checkpoints/

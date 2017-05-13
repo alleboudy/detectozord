@@ -41,6 +41,7 @@ label_to_name = ['airplane', 'automobile', 'bird', 'cat', 'deer' , 'dog', 'frog'
 
 # TODO plot the first five *validation* images 
 for index in range(5):
+#    index=2
     feed_dict = {inputs: [val_samples[index]]}
     classification = sess.run(probs, feed_dict)
     print(classification)

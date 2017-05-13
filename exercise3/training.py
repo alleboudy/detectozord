@@ -43,7 +43,7 @@ NUM_CLASSES = 10
 # You can also modify these hyper-parameters (batch_size, epochs)
 # e.g. Add more epochs, if not converged. Reduce batch_size if too big for your GPU memory
 batch_size = 50  
-num_train_epochs = 100
+num_train_epochs = 30
 steps_per_epoch = int( train_samples.shape[0] / batch_size)
 
 
@@ -65,7 +65,7 @@ meanLoss= tf.reduce_mean(loss)
 alpha=0.01
 tvars =tf.trainable_variables()
 l2_reg = tf.reduce_sum([tf.nn.l2_loss(var) for var in tvars])
-loss = meanLoss+alpha*l2_reg
+loss = meanLoss#+alpha*l2_reg
 # hint: use tf.trainable_variables() and tf.nn.l2_loss(var)
 
 
@@ -76,7 +76,7 @@ correct_mask = tf.to_float(tf.equal(predictions, labels))
 accuracy = tf.reduce_mean(correct_mask)
 
 # TODO define the learning rate
-learningRate = 1
+learningRate = .1
 # TODO define the optimizer (experiment with different options)
 opt = tf.train.AdamOptimizer( learning_rate=learningRate,
     beta1=0.9,
