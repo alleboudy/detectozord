@@ -65,7 +65,7 @@ meanLoss= tf.reduce_mean(loss)
 alpha=0.01
 tvars =tf.trainable_variables()
 l2_reg = tf.reduce_sum([tf.nn.l2_loss(var) for var in tvars])
-loss = meanLoss#+alpha*l2_reg
+loss = meanLoss+alpha*l2_reg
 # hint: use tf.trainable_variables() and tf.nn.l2_loss(var)
 
 
