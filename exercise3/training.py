@@ -158,7 +158,7 @@ for epoch in range(num_train_epochs):
         Xs,Ys = next(gen_data_batch([train_samples,train_labels],batch_size))
         print('\r')
 	print(Ys)    
-        __, summary, _  =  sess.run([loss, train_summary_op, opt_op], feed_dict={inputs: Xs, labels: Ys})
+        summary, _  =  sess.run([ train_summary_op, opt_op], feed_dict={inputs: Xs, labels: Ys})
 #	print(epoch)
 	#print(summary)
 
@@ -170,8 +170,17 @@ for epoch in range(num_train_epochs):
             writer.add_summary(summary, global_step=epoch)
             
     
-    writer.add_summary(summary, global_step=epoch)
+    #writer.add_summary(summary, global_step=epoch)
     # TODO every epoch: 
+    validation_steps = int(val_samples.shape[0]/batch_size)
+    acc=0
+    for valStep in range(validation_steps):
+	Xs,Ys=next(gen_data_batch([val_samples,val_labels],batch_size))
+	res=  sess.run([ accuracy], feed_dict={inputs: Xs, labels: Ys})
+	print(res)
+	acc+=res[0]
+	print('val accuracy so far: '+str(acc))
+    sess.run([ val_summary_op], feed_dict={val_accuracy: acc})
     #     save the current validation accuracy to tensorboard
     # Note: we are interested in the accuracy over the *entire* validation set, not just the current batch
 # TODO use tf.train.Saver to save the trained model as checkpoints/model.ckpt
