@@ -42,8 +42,8 @@ NUM_CLASSES = 10
 
 # You can also modify these hyper-parameters (batch_size, epochs)
 # e.g. Add more epochs, if not converged. Reduce batch_size if too big for your GPU memory
-batch_size = 50  
-num_train_epochs = 20
+batch_size = 100  
+num_train_epochs = 30
 steps_per_epoch = int( train_samples.shape[0] / batch_size)
 
 
@@ -76,7 +76,7 @@ correct_mask = tf.to_float(tf.equal(predictions, labels))
 accuracy = tf.reduce_mean(correct_mask)
 
 # TODO define the learning rate
-learningRate=1
+learningRate=.001
 # TODO define the optimizer (experiment with different options)
 opt = tf.train.AdamOptimizer( learning_rate=learningRate,
     beta1=0.9,
@@ -115,8 +115,10 @@ def gen_data(source):
 	#indices = range(len(source[0]))
 	#random.shuffle(indices)
         for i in indices:
+	    
             image = source[0][i]
-            label = source[1][i]
+            #label=np.zeros(NUM_CLASSES)
+	    label=source[1][i]
             yield image, label
 
 

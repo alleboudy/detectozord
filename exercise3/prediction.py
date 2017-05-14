@@ -7,6 +7,12 @@ from utils import buildNetwork, load_cifar
 # Let's start a Session
 sess = tf.Session()
 
+# restore the saved checkpoints ./checkpoints/model.ckpt
+#saver = tf.train.Saver()
+#saver.restore(sess, "./checkpoints/model.ckpt")
+
+
+
 
 batch_size = 1
 HEIGHT = 32
@@ -45,6 +51,7 @@ for index in range(5):
     feed_dict = {inputs: [val_samples[index]]}
     classification = sess.run(probs, feed_dict)
     print(classification)
+    print(sum(classification[0]))
     idx = max(enumerate(classification[0]), key=operator.itemgetter(1))[0]
     #plt.figure(figsize=(1,1))
     print('actual: '+label_to_name[val_labels[index]]+' predicted: '+ label_to_name[idx])
