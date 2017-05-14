@@ -59,3 +59,13 @@ for index in range(5):
 
 # TODO for each image, print the predicted class and the probability vector for all classes
 
+for index in range(val_samples.shape[0]):
+#    index=2
+    feed_dict = {inputs: [val_samples[index]]}
+    classification = sess.run(probs, feed_dict)
+    idx = max(enumerate(classification[0]), key=operator.itemgetter(1))[0]
+    #plt.figure(figsize=(1,1))
+    print('actual: '+label_to_name[val_labels[index]]+' predicted: '+ label_to_name[idx])
+    for i in range(10):
+    	print (label_to_name[i]+': '+str(classification[0][i])])
+    print('--------------')

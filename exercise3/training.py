@@ -180,7 +180,8 @@ for epoch in range(num_train_epochs):
 	print(res)
 	acc+=res[0]
 	print('val accuracy so far: '+str(acc))
-    sess.run([ val_summary_op], feed_dict={val_accuracy: acc})
+    summary=sess.run([ val_summary_op], feed_dict={val_accuracy: acc})
+    writer.add_summary(summary, global_step=epoch)
     #     save the current validation accuracy to tensorboard
     # Note: we are interested in the accuracy over the *entire* validation set, not just the current batch
 # TODO use tf.train.Saver to save the trained model as checkpoints/model.ckpt
