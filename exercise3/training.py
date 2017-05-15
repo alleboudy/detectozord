@@ -64,7 +64,7 @@ NUM_CLASSES = 10
 # You can also modify these hyper-parameters (batch_size, epochs)
 # e.g. Add more epochs, if not converged. Reduce batch_size if too big for your GPU memory
 batch_size = 100  
-num_train_epochs = 30
+num_train_epochs = 20
 steps_per_epoch = int( train_samples.shape[0] / batch_size)
 
 
@@ -72,8 +72,8 @@ steps_per_epoch = int( train_samples.shape[0] / batch_size)
 
 inputs = tf.placeholder(tf.float32,name='input',shape=[batch_size,WIDTH,HEIGHT,CHANNELS])
 labels = tf.placeholder(tf.int32,name='output',shape=[batch_size])
-
-logits = buildNetwork(inputs, batch_size)
+keep_prob = tf.placeholder(tf.float32) #for dropout
+logits = buildNetwork(inputs, batch_size,keep_prob=keep_prob)
 
 
 # TODO add an appropriate cross entropy loss function
@@ -83,7 +83,7 @@ loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels,logits=logit
 meanLoss= tf.reduce_mean(loss)
 
 # TODO add L2 regularization
-alpha=0.01
+alpha=0.0001
 tvars =tf.trainable_variables()
 l2_reg = tf.reduce_sum([tf.nn.l2_loss(var) for var in tvars])
 loss = meanLoss+alpha*l2_reg
@@ -179,7 +179,7 @@ for epoch in range(num_train_epochs):
         Xs,Ys = next(gen_data_batch([train_samples,train_labels],batch_size))
         print('\r')
 	print(Ys)    
-        summary, _  =  sess.run([ train_summary_op, opt_op], feed_dict={inputs: Xs, labels: Ys})
+        summary, _  =  sess.run([ train_summary_op, opt_op], feed_dict={inputs: Xs, labels: Ys,keep_prob:0.5})
 #	print(epoch)
 	#print(summary)
 
@@ -197,7 +197,7 @@ for epoch in range(num_train_epochs):
     acc=0
     for valStep in range(validation_steps):
 	Xs,Ys=next(gen_data_batch([val_samples,val_labels],batch_size))
-	res=  sess.run([ accuracy], feed_dict={inputs: Xs, labels: Ys})
+	res=  sess.run([ accuracy], feed_dict={inputs: Xs, labels: Ys,keep_prob:1.})
 	print(res)
 	acc+=res[0]
 	print('val accuracy so far: '+str(acc))
