@@ -95,7 +95,8 @@ void detectChocolate(Mat imgObj, Mat &imgScene, Mat arObj, bool showSteps = fals
 	detector->compute(imgObj, keypointsObj, descriptorsObj);
 	detector->compute(imgScene, keypointsScene, descriptorsScene);
 
-	BFMatcher matcher(NORM_L2);
+	//BFMatcher matcher(NORM_L2);
+	BFMatcher matcher(NORM_HAMMING);
 	vector<DMatch> matches;
 	matcher.match(descriptorsObj, descriptorsScene, matches);
 
@@ -198,7 +199,7 @@ int main(int argc, char *argv[])
 	// Step e: Implement live demo for the object detector, using web-camera
 	VideoCapture cap;
 
-	if (!cap.open(0)) // if not success, exit program
+	if (!cap.open(1)) // if not success, exit program
 	{
 		cout << "Cannot open the video file" << endl;
 		return -1;
