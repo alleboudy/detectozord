@@ -1,25 +1,25 @@
 import numpy as np
 import tensorflow as tf
 import os
-import urllib.request
+#import urllib.request
 import tarfile
 import pickle
 
 
 # Loads Cifar From The Internet To Your Disk
-def download_cifar(data_path, data_url):
-    filename = data_url.split('/')[-1]
-    file_path = os.path.join(data_path, filename)
+#def download_cifar(data_path, data_url):
+#    filename = data_url.split('/')[-1]
+#    file_path = os.path.join(data_path, filename)
 
-    if not os.path.exists(data_path):
-        os.makedirs(data_path)
+#    if not os.path.exists(data_path):
+#        os.makedirs(data_path)
 
-    print("Downloading CIFAR10")
-    file_path, _ = urllib.request.urlretrieve(url=data_url,filename=file_path)
+#    print("Downloading CIFAR10")
+#    file_path, _ = urllib.request.urlretrieve(url=data_url,filename=file_path)
 
-    print("Download finished. Extracting files.")
-    tarfile.open(name=file_path, mode="r:gz").extractall(data_path)
-    print("Done.")
+#    print("Download finished. Extracting files.")
+#    tarfile.open(name=file_path, mode="r:gz").extractall(data_path)
+#    print("Done.")
 
 
 
@@ -32,12 +32,12 @@ def load_cifar(data_path):
 
     for i in range(5):
         with open(data_path + '/cifar-10-batches-py/data_batch_' + str(i+1), 'rb') as fo:
-            dict = pickle.load(fo, encoding='bytes')
+            dict = pickle.load(fo)
             train_samples.append(dict[b'data'])
             train_labels.append(dict[b'labels'])
 
     with open(data_path + '/cifar-10-batches-py/test_batch', 'rb') as fo:
-        dict = pickle.load(fo, encoding='bytes')
+        dict = pickle.load(fo)
         val_samples.append(dict[b'data'])
         val_labels.append(dict[b'labels'])        
             
@@ -53,7 +53,7 @@ def load_cifar(data_path):
 
 
 # Builds The Network
-def buildNetwork(inputs, batch_size, NUM_CLASSES=10):
+def buildNetwork(inputs, batch_size, NUM_CLASSES=10,keep_prob=1.0):
     def conv_layer(x, num_channels_out, spatial_stride=2):
         """ Layer for 3x3 convolutions.
 
@@ -119,6 +119,7 @@ def buildNetwork(inputs, batch_size, NUM_CLASSES=10):
 
     x = conv_layer(x, num_channels_out=32, spatial_stride=1)
     x = tf.nn.relu(x)
+    x= tf.nn.dropout(x,keep_prob)
     x = tf.nn.lrn(x, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
                     name='norm2')
     x = tf.nn.max_pool(x, ksize=[1, 3, 3, 1],
@@ -135,6 +136,7 @@ def buildNetwork(inputs, batch_size, NUM_CLASSES=10):
 
     x = linear_layer(x, num_outputs=192)
     x = tf.nn.relu(x)
+    x= tf.nn.dropout(x,keep_prob)
 
     logits = linear_layer(x, num_outputs=NUM_CLASSES)
 
