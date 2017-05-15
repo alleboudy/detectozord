@@ -9,6 +9,7 @@ import tarfile
 import pickle
 import utils
 from utils import buildNetwork, load_cifar
+from scipy.ndimage.filters import gaussian_filter
 
 # URL for the data-set on the internet.
 data_path = "data/CIFAR-10/"
@@ -19,9 +20,29 @@ data_url = "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
 sess = tf.Session()
 
 #load_cifar('data/CIFAR-10/'')
-
+DATA_AUGMENTATION=False
 
 train_samples, train_labels, val_samples, val_labels = load_cifar(data_path)
+
+if DATA_AUGMENTATION:
+	augmentedSamples=[]
+	augmentedLabels=[]
+	for i in range(train_samples.shape[0]):
+	    augmentedSamples.append(train_samples[i,:,:,:])
+	    augmentedSamples.append(np.flipud(train_samples[i,:,:,:]))
+	    augmentedSamples.append(np.fliplr(train_samples[i,:,:,:]))
+	    augmentedSamples.append(np.fliplr(np.flipud(train_samples[i,:,:,:])))
+	    augmentedSamples.append(gaussian_filter(train_samples[i,:,:,:], sigma=0.5))
+	    augmentedLabels.append(train_labels[i])
+	    augmentedLabels.append(train_labels[i])
+	    augmentedLabels.append(train_labels[i])
+	    augmentedLabels.append(train_labels[i])
+	    augmentedLabels.append(train_labels[i])
+    
+	train_samples = np.asarray(augmentedSamples)
+	train_labels = np.asarray(augmentedLabels)
+
+
 
 
 label_to_name = ['airplane', 'automobile', 'bird', 'cat', 'deer' , 'dog', 'frog', 'horse', 'ship', 'truck']
@@ -170,7 +191,7 @@ for epoch in range(num_train_epochs):
             writer.add_summary(summary, global_step=epoch)
             
     
-    #writer.add_summary(summary, global_step=epoch)
+    writer.add_summary(summary, global_step=epoch)
     # TODO every epoch: 
     validation_steps = int(val_samples.shape[0]/batch_size)
     acc=0
@@ -181,7 +202,7 @@ for epoch in range(num_train_epochs):
 	acc+=res[0]
 	print('val accuracy so far: '+str(acc))
     summary=sess.run([ val_summary_op], feed_dict={val_accuracy: acc})
-    writer.add_summary(summary, global_step=epoch)
+    writer.add_summary(summary[0], global_step=epoch)
     #     save the current validation accuracy to tensorboard
     # Note: we are interested in the accuracy over the *entire* validation set, not just the current batch
 # TODO use tf.train.Saver to save the trained model as checkpoints/model.ckpt
