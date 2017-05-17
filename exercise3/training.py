@@ -64,7 +64,7 @@ NUM_CLASSES = 10
 # You can also modify these hyper-parameters (batch_size, epochs)
 # e.g. Add more epochs, if not converged. Reduce batch_size if too big for your GPU memory
 batch_size = 100  
-num_train_epochs = 20
+num_train_epochs = 30
 steps_per_epoch = int( train_samples.shape[0] / batch_size)
 
 
@@ -83,7 +83,7 @@ loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels,logits=logit
 meanLoss= tf.reduce_mean(loss)
 
 # TODO add L2 regularization
-alpha=0.0001
+alpha=0.01
 tvars =tf.trainable_variables()
 l2_reg = tf.reduce_sum([tf.nn.l2_loss(var) for var in tvars])
 loss = meanLoss+alpha*l2_reg
@@ -161,7 +161,7 @@ def gen_data_batch(source,batchSize):
 
 
 # indicators on how often to create a summary
-num_steps_per_train_summary = 25  
+num_steps_per_train_summary = 5  
 
 # TODO run num_train_steps iterations on the training samples each of batchsize 50
 #samples_indices = list(range(train_samples.shape[0]))
@@ -177,12 +177,12 @@ for epoch in range(num_train_epochs):
         #print(iter)
         # TODO read the batch and execute one iteration of the graph 
         Xs,Ys = next(gen_data_batch([train_samples,train_labels],batch_size))
-        print('\r')
-	print(Ys)    
-        summary, _  =  sess.run([ train_summary_op, opt_op], feed_dict={inputs: Xs, labels: Ys,keep_prob:0.5})
+        #print('\r')
+	#print(Ys)    
+        l,summary, _  =  sess.run([loss, train_summary_op, opt_op], feed_dict={inputs: Xs, labels: Ys,keep_prob:1.})
 #	print(epoch)
 	#print(summary)
-
+	print('\rEpoch: '+str(epoch)+'_Iteration: '+str(iteration)+' Loss: '+str(l))
     
     
         # TODO every num_steps_per_train_summary iterations: 
