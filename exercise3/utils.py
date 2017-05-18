@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+
 import os
 import urllib.request
 import tarfile
@@ -53,7 +54,7 @@ def load_cifar(data_path):
 
 
 # Builds The Network
-def buildNetwork(inputs, batch_size, NUM_CLASSES=10):
+def buildNetwork(inputs, batch_size, NUM_CLASSES=10,keep_prob=1.0):
     def conv_layer(x, num_channels_out, spatial_stride=2):
         """ Layer for 3x3 convolutions.
 
@@ -115,7 +116,7 @@ def buildNetwork(inputs, batch_size, NUM_CLASSES=10):
                      padding='SAME', name='pool1')
     x = tf.nn.lrn(x, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
                 name='norm1')
-
+#    x= tf.nn.dropout(x,keep_prob)
 
     x = conv_layer(x, num_channels_out=32, spatial_stride=1)
     x = tf.nn.relu(x)
@@ -124,17 +125,18 @@ def buildNetwork(inputs, batch_size, NUM_CLASSES=10):
     x = tf.nn.max_pool(x, ksize=[1, 3, 3, 1],
                          strides=[1, 2, 2, 1], padding='SAME', name='pool2')
 
-
+    x= tf.nn.dropout(x,keep_prob)
     x = conv_layer(x, num_channels_out=64, spatial_stride=1)
     x = tf.nn.relu(x)
-
+ #   x= tf.nn.dropout(x,keep_prob)
     x = tf.reshape(x, [batch_size, -1])
 
     x = linear_layer(x, num_outputs=384)
     x = tf.nn.relu(x)
-
+    x= tf.nn.dropout(x,keep_prob)
     x = linear_layer(x, num_outputs=192)
     x = tf.nn.relu(x)
+  #  x= tf.nn.dropout(x,keep_prob)
 
     logits = linear_layer(x, num_outputs=NUM_CLASSES)
 

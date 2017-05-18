@@ -295,3 +295,4 @@ main.1.cpp
 __pycache__/
 data/
 log/
+checkpoints/
