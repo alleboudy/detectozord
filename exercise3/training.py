@@ -20,7 +20,7 @@ data_url = "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
 sess = tf.Session()
 
 #load_cifar('data/CIFAR-10/'')
-DATA_AUGMENTATION=True
+DATA_AUGMENTATION=False
 
 train_samples, train_labels, val_samples, val_labels = load_cifar(data_path)
 
@@ -63,7 +63,7 @@ NUM_CLASSES = 10
 
 # You can also modify these hyper-parameters (batch_size, epochs)
 # e.g. Add more epochs, if not converged. Reduce batch_size if too big for your GPU memory
-batch_size = 200  
+batch_size = 100  
 num_train_epochs = 30
 steps_per_epoch = int( train_samples.shape[0] / batch_size)
 
@@ -97,10 +97,10 @@ correct_mask = tf.to_float(tf.equal(predictions, labels))
 accuracy = tf.reduce_mean(correct_mask)
 
 # TODO define the learning rate
-initialRate=.05
+initialRate=.001
 learningRate=tf.placeholder(tf.float32)
 # TODO define the optimizer (experiment with different options)
-opt = tf.train.MomentumOptimizer( learning_rate=learningRate,momentum=0.5,use_nesterov=True)
+opt = tf.train.AdamOptimizer( learning_rate=learningRate,     beta1=0.9,     beta2=0.999,     epsilon=1e-08,     use_locking=False,     name='Adam')#tf.train.MomentumOptimizer( learning_rate=learningRate,momentum=0.5,use_nesterov=True)
 # TODO build the corresponding training operation
 opt_op = opt.minimize(loss)
 
@@ -157,7 +157,7 @@ def gen_data_batch(source,batchSize):
 
 
 # indicators on how often to create a summary
-num_steps_per_train_summary = 25  
+num_steps_per_train_summary = 5  
 
 # TODO run num_train_steps iterations on the training samples each of batchsize 50
 #samples_indices = list(range(train_samples.shape[0]))
@@ -175,17 +175,17 @@ for epoch in range(num_train_epochs):
         Xs,Ys = next(gen_data_batch([train_samples,train_labels],batch_size))
         #print('\r')
     #print(Ys)    
-        l,summary, _  =  sess.run([loss, train_summary_op, opt_op], feed_dict={inputs: Xs, labels: Ys,keep_prob:.3,learningRate:initialRate})
+        l,summary, _  =  sess.run([loss, train_summary_op, opt_op], feed_dict={inputs: Xs, labels: Ys,keep_prob:1.0,learningRate:initialRate})
 #    print(epoch)
     #print(summary)
-    print('\rEpoch: '+str(epoch)+'_Iteration: '+str(iteration)+' Loss: '+str(l))
+        print('\rEpoch: '+str(epoch)+'_Iteration: '+str(iteration)+' Loss: '+str(l))
     
     
         # TODO every num_steps_per_train_summary iterations: 
         #     save the current training status (loss and accuracy) to tensorboard
     if epoch % num_steps_per_train_summary==0:
             writer.add_summary(summary, global_step=epoch)
-            initialRate*=.1
+            #initialRate*=.1
             
     
     #writer.add_summary(summary, global_step=epoch)
@@ -194,7 +194,7 @@ for epoch in range(num_train_epochs):
     acc=0
     for valStep in range(validation_steps):
         Xs,Ys=next(gen_data_batch([val_samples,val_labels],batch_size))
-        res=  sess.run([ accuracy], feed_dict={inputs: Xs, labels: Ys,keep_prob:0.3})
+        res=  sess.run([ accuracy], feed_dict={inputs: Xs, labels: Ys,keep_prob:1.0})
         print(res)
         acc+=res[0]
         print('val accuracy so far: '+str(acc))
