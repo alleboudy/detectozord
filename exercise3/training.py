@@ -63,8 +63,8 @@ NUM_CLASSES = 10
 
 # You can also modify these hyper-parameters (batch_size, epochs)
 # e.g. Add more epochs, if not converged. Reduce batch_size if too big for your GPU memory
-batch_size = 100  
-num_train_epochs = 200
+batch_size = 200  
+num_train_epochs = 30
 steps_per_epoch = int( train_samples.shape[0] / batch_size)
 
 
@@ -83,7 +83,7 @@ loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels,logits=logit
 meanLoss= tf.reduce_mean(loss)
 
 # TODO add L2 regularization
-alpha=0.0005
+alpha=0.05
 tvars =tf.trainable_variables()
 l2_reg = tf.reduce_sum([tf.nn.l2_loss(var) for var in tvars])
 loss = meanLoss+alpha*l2_reg
@@ -100,7 +100,7 @@ accuracy = tf.reduce_mean(correct_mask)
 initialRate=.05
 learningRate=tf.placeholder(tf.float32)
 # TODO define the optimizer (experiment with different options)
-opt = tf.train.MomentumOptimizer( learning_rate=learningRate,momentum=0.9,use_nesterov=True)
+opt = tf.train.MomentumOptimizer( learning_rate=learningRate,momentum=0.5,use_nesterov=True)
 # TODO build the corresponding training operation
 opt_op = opt.minimize(loss)
 
@@ -135,7 +135,7 @@ def gen_data(source):
         
             image = source[0][i]
             #label=np.zeros(NUM_CLASSES)
-        label=source[1][i]
+            label=source[1][i]
             yield image, label
 
 
@@ -185,7 +185,7 @@ for epoch in range(num_train_epochs):
         #     save the current training status (loss and accuracy) to tensorboard
     if epoch % num_steps_per_train_summary==0:
             writer.add_summary(summary, global_step=epoch)
-        initialRate*=.1
+            initialRate*=.1
             
     
     #writer.add_summary(summary, global_step=epoch)
@@ -193,13 +193,13 @@ for epoch in range(num_train_epochs):
     validation_steps = int(val_samples.shape[0]/batch_size)
     acc=0
     for valStep in range(validation_steps):
-    Xs,Ys=next(gen_data_batch([val_samples,val_labels],batch_size))
-    res=  sess.run([ accuracy], feed_dict={inputs: Xs, labels: Ys,keep_prob:0.3})
-    print(res)
-    acc+=res[0]
-    print('val accuracy so far: '+str(acc))
-    summary=sess.run([ val_summary_op], feed_dict={val_accuracy: acc})
-    writer.add_summary(summary[0], global_step=epoch)
+        Xs,Ys=next(gen_data_batch([val_samples,val_labels],batch_size))
+        res=  sess.run([ accuracy], feed_dict={inputs: Xs, labels: Ys,keep_prob:0.3})
+        print(res)
+        acc+=res[0]
+        print('val accuracy so far: '+str(acc))
+        summary=sess.run([ val_summary_op], feed_dict={val_accuracy: acc})
+        writer.add_summary(summary[0], global_step=epoch)
     #     save the current validation accuracy to tensorboard
     # Note: we are interested in the accuracy over the *entire* validation set, not just the current batch
 # TODO use tf.train.Saver to save the trained model as checkpoints/model.ckpt
