@@ -1,6 +1,6 @@
 # Exercise3 note:
 please run the training loop from training.py instead of the notebook, that is the one used for training as I had to run the code on a remote machine
-
+and only python 2 was installed there, sorry for the inconvenience
 
 
 # Exercise2 notes:
