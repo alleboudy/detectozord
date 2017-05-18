@@ -1,3 +1,8 @@
+# Exercise3 note:
+please run the training loop from training.py instead of the notebook, that is the one used for training as I had to run the code on a remote machine
+
+
+
 # Exercise2 notes:
 First all of the assignment steps are performed on the chocolate image scene (will need to click keys 5 times to skip the steps)
 Then a live video will be caputred where you can present your chocolate bar to the cam (we used chocolate1.png as the template to search for) and it will be replaced with the chocolate2.png image
