@@ -7,8 +7,8 @@ import os
 #import urllib.request
 import tarfile
 import pickle
-import utilsWithDropOut
-from utilsWithDropOut import buildNetwork, load_cifar
+import modifiedutils
+from modifiedutils import buildNetwork, load_cifar
 from scipy.ndimage.filters import gaussian_filter
 
 # URL for the data-set on the internet.
@@ -25,22 +25,22 @@ DATA_AUGMENTATION=True
 train_samples, train_labels, val_samples, val_labels = load_cifar(data_path)
 
 if DATA_AUGMENTATION:
-	augmentedSamples=[]
-	augmentedLabels=[]
-	for i in range(train_samples.shape[0]):
-	    augmentedSamples.append(train_samples[i,:,:,:])
-	    augmentedSamples.append(np.flipud(train_samples[i,:,:,:]))
-	    augmentedSamples.append(np.fliplr(train_samples[i,:,:,:]))
-	    augmentedSamples.append(np.fliplr(np.flipud(train_samples[i,:,:,:])))
-	    augmentedSamples.append(gaussian_filter(train_samples[i,:,:,:], sigma=0.5))
-	    augmentedLabels.append(train_labels[i])
-	    augmentedLabels.append(train_labels[i])
-	    augmentedLabels.append(train_labels[i])
-	    augmentedLabels.append(train_labels[i])
-	    augmentedLabels.append(train_labels[i])
+    augmentedSamples=[]
+    augmentedLabels=[]
+    for i in range(train_samples.shape[0]):
+        augmentedSamples.append(train_samples[i,:,:,:])
+        augmentedSamples.append(np.flipud(train_samples[i,:,:,:]))
+        augmentedSamples.append(np.fliplr(train_samples[i,:,:,:]))
+        augmentedSamples.append(np.fliplr(np.flipud(train_samples[i,:,:,:])))
+        augmentedSamples.append(gaussian_filter(train_samples[i,:,:,:], sigma=0.5))
+        augmentedLabels.append(train_labels[i])
+        augmentedLabels.append(train_labels[i])
+        augmentedLabels.append(train_labels[i])
+        augmentedLabels.append(train_labels[i])
+        augmentedLabels.append(train_labels[i])
     
-	train_samples = np.asarray(augmentedSamples)
-	train_labels = np.asarray(augmentedLabels)
+    train_samples = np.asarray(augmentedSamples)
+    train_labels = np.asarray(augmentedLabels)
 
 
 
@@ -129,13 +129,13 @@ def gen_data(source):
     random.shuffle(indices)
 
     while True:
-	#indices = range(len(source[0]))
-	#random.shuffle(indices)
+    #indices = range(len(source[0]))
+    #random.shuffle(indices)
         for i in indices:
-	    
+        
             image = source[0][i]
             #label=np.zeros(NUM_CLASSES)
-	    label=source[1][i]
+        label=source[1][i]
             yield image, label
 
 
@@ -174,18 +174,18 @@ for epoch in range(num_train_epochs):
         # TODO read the batch and execute one iteration of the graph 
         Xs,Ys = next(gen_data_batch([train_samples,train_labels],batch_size))
         #print('\r')
-	#print(Ys)    
+    #print(Ys)    
         l,summary, _  =  sess.run([loss, train_summary_op, opt_op], feed_dict={inputs: Xs, labels: Ys,keep_prob:.3,learningRate:initialRate})
-#	print(epoch)
-	#print(summary)
-	print('\rEpoch: '+str(epoch)+'_Iteration: '+str(iteration)+' Loss: '+str(l))
+#    print(epoch)
+    #print(summary)
+    print('\rEpoch: '+str(epoch)+'_Iteration: '+str(iteration)+' Loss: '+str(l))
     
     
         # TODO every num_steps_per_train_summary iterations: 
         #     save the current training status (loss and accuracy) to tensorboard
     if epoch % num_steps_per_train_summary==0:
             writer.add_summary(summary, global_step=epoch)
-	    initialRate*=.1
+        initialRate*=.1
             
     
     #writer.add_summary(summary, global_step=epoch)
@@ -193,11 +193,11 @@ for epoch in range(num_train_epochs):
     validation_steps = int(val_samples.shape[0]/batch_size)
     acc=0
     for valStep in range(validation_steps):
-	Xs,Ys=next(gen_data_batch([val_samples,val_labels],batch_size))
-	res=  sess.run([ accuracy], feed_dict={inputs: Xs, labels: Ys,keep_prob:0.3})
-	print(res)
-	acc+=res[0]
-	print('val accuracy so far: '+str(acc))
+    Xs,Ys=next(gen_data_batch([val_samples,val_labels],batch_size))
+    res=  sess.run([ accuracy], feed_dict={inputs: Xs, labels: Ys,keep_prob:0.3})
+    print(res)
+    acc+=res[0]
+    print('val accuracy so far: '+str(acc))
     summary=sess.run([ val_summary_op], feed_dict={val_accuracy: acc})
     writer.add_summary(summary[0], global_step=epoch)
     #     save the current validation accuracy to tensorboard

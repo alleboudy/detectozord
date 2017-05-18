@@ -1,6 +1,5 @@
 # Exercise2 notes:
-First all of the assignment steps are performed on the chocolate image scene (will need to click keys 5 times to skip the steps)
-Then a live video will be caputred where you can present your chocolate bar to the cam (we used chocolate1.png as the template to search for) and it will be replaced with the chocolate2.png image
+the training notebook now is up to date, also the prediction notebook, however training.py is used for training and modifiedutils, is using python 2 , apologies for this
 
 
 Please note that:

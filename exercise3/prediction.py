@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import operator
-from utils import buildNetwork, load_cifar
+from modifiedutils import buildNetwork, load_cifar
 
 
 # Let's start a Session
