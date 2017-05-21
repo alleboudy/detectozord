@@ -32,15 +32,13 @@ def load_cifar(data_path):
     val_labels = []
 
     for i in range(5):
-        #  äwith open(data_path + 'cifar-10-batches-py/data_batch_' + str(i+1), 'rb') as fo:
-        with open('/media/zimmerw/Daten/Daten/walter.zimmer/Documents/private/master/2_semester_31_ECTS/Masterpraktikum_10ECTS/Praktikum_Perception_and_Learning_in_Robotics_and_Augmented_Reality_10_ECTS/exercises/plarr17/exercise3/data/CIFAR-10/cifar-10-batches-py/data_batch_' + str(i+1), 'rb') as fo:
+        with open(data_path + 'cifar-10-batches-py/data_batch_' + str(i+1), 'rb') as fo:
 
             dict = pickle.load(fo, encoding='bytes')
             train_samples.append(dict[b'data'])
             train_labels.append(dict[b'labels'])
 
-    #  with open(data_path + 'cifar-10-batches-py/test_batch', 'rb') as fo:
-    with open('/media/zimmerw/Daten/Daten/walter.zimmer/Documents/private/master/2_semester_31_ECTS/Masterpraktikum_10ECTS/Praktikum_Perception_and_Learning_in_Robotics_and_Augmented_Reality_10_ECTS/exercises/plarr17/exercise3/data/CIFAR-10/cifar-10-batches-py/test_batch', 'rb') as fo:
+    with open(data_path + 'cifar-10-batches-py/test_batch', 'rb') as fo:
 
         dict = pickle.load(fo, encoding='bytes')
         val_samples.append(dict[b'data'])
