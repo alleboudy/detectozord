@@ -1,5 +1,6 @@
 # Exercise4 notes:
 Visualization.ipynb is for problem number 4 Feature Visualization in the exercise
+under ssd/ is demo.py for problem number 5
 
 # Exercise3 notes:
 the training notebook now is up to date, also the prediction notebook, however training.py is used for training and modifiedutils, is using python 2 , apologies for this
