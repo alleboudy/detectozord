@@ -81,51 +81,56 @@ int main(int argc, char* argv[])
 {
 	string projectSrcDir = PROJECT_SOURCE_DIR;
 
-	// Loading depth image and color image
-	int index = 0;
-	string depthFilename = projectSrcDir + "/data/Exercise5/depth/depth" + to_string(index) + ".png";
-	string colorFilename = projectSrcDir + "/data/Exercise5/color/color" + to_string(index) + ".png";
-	Mat depthImg = imread(depthFilename, CV_LOAD_IMAGE_UNCHANGED);
-	Mat colorImg = imread(colorFilename, CV_LOAD_IMAGE_UNCHANGED);
-
-	// Loading camera pose
-	string poseFilename = projectSrcDir + "/data/Exercise5/pose/pose" + to_string(index) + ".txt";
-	Eigen::Matrix4f poseMat;   // 4x4 transformation matrix
-	loadCameraPose(poseFilename, poseMat);
-	cout << "Transformation matrix" << endl << poseMat << endl;
-
-	// Setting camera intrinsic parameters of depth camera
-	float focal = 570.f;  // focal length
-	float px = 319.5f; // principal point x
-	float py = 239.5f; // principal point y
-
 	// Data for point clouds consisted of 3D points and their colors
 	vector<Eigen::Vector4f> vertices; // 3D points
 	vector<Vec3b> colors;   // color of the points
 
-
-
-	// Create point clouds from depth image and color image using camera intrinsic parameters
-	// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
-	for (int i = 0; i < depthImg.rows; i++)
+	for (int index = 0; index <= 5; index++)
 	{
+
+
+		// Loading depth image and color image
+		//int index = 5;
+		string depthFilename = projectSrcDir + "/data/depth/depth" + to_string(index) + ".png";
+		string colorFilename = projectSrcDir + "/data/color/color" + to_string(index) + ".png";
+		Mat depthImg = imread(depthFilename, CV_LOAD_IMAGE_UNCHANGED);
+		Mat colorImg = imread(colorFilename, CV_LOAD_IMAGE_UNCHANGED);
+
+		// Loading camera pose
+		string poseFilename = projectSrcDir + "/data/pose/pose" + to_string(index) + ".txt";
+		Eigen::Matrix4f poseMat;   // 4x4 transformation matrix
+		loadCameraPose(poseFilename, poseMat);
+		cout << "Transformation matrix" << endl << poseMat << endl;
+
+		// Setting camera intrinsic parameters of depth camera
+		float focal = 570.f;  // focal length
+		float px = 319.5f; // principal point x
+		float py = 239.5f; // principal point y
+
+
+
+		// Create point clouds from depth image and color image using camera intrinsic parameters
+		// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
 		for (int j = 0; j < depthImg.cols; j++)
 		{
-			auto point = Eigen::Vector4f((i - px)*depthImg.at<ushort>(i, j) / focal, (j - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
+			for (int i = 0; i < depthImg.rows; i++)
+			{
+				auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
 
 
-			// (2) Translate 3D point in local coordinate system to 3D point in global coordinate system using camera pose.
-			point =  poseMat *point;
-			// (3) Add the 3D point to vertices in point clouds data.
-			vertices.push_back(point);
-			// (4) Also compute the color of 3D point and add it to colors in point clouds data.
-			colors.push_back(colorImg.at<Vec3b>(i, j));
+				// (2) Translate 3D point in local coordinate system to 3D point in global coordinate system using camera pose.
+				point = poseMat *point;
+				// (3) Add the 3D point to vertices in point clouds data.
+				vertices.push_back(point);
+				// (4) Also compute the color of 3D point and add it to colors in point clouds data.
+				colors.push_back(colorImg.at<Vec3b>(i, j));
 
+			}
 		}
-	}
 
+	}
 	// Save point clouds
-	savePointCloudsPLY("pointClouds" + to_string(index) + ".ply", vertices, colors);
+	savePointCloudsPLY("pointClouds.ply", vertices, colors);
 
 	return 0;
 }
