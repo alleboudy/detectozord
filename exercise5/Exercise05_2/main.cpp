@@ -6,7 +6,7 @@
 
 #include <OpenNI.h>
 #include <PS1080.h>
-
+#include<cmath>
 using namespace cv;
 using namespace std;
 using namespace openni;
@@ -74,25 +74,6 @@ cv::Mat convColoredDepth(cv::Mat& depthImg, float minThresh = 0, float maxThresh
 }
 
 
-void DepthImg2PointCloud(Mat depthImg, Mat colorImg, vector<Eigen::Vector4f> vertices, vector<Vec3b> colors, float focal = 570.f, float px = 319.5f, float py = 239.5f){
-
-	// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
-	for (int j = 0; j < depthImg.cols; j++)
-	{
-		for (int i = 0; i < depthImg.rows; i++)
-		{
-			auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
-
-			// (3) Add the 3D point to vertices in point clouds data.
-			vertices.push_back(point);
-			// (4) Also compute the color of 3D point and add it to colors in point clouds data.
-			colors.push_back(colorImg.at<Vec3b>(i, j));
-
-		}
-	}
-
-
-}
 
 int main(int argc, char* argv[])
 {
@@ -145,7 +126,7 @@ int main(int argc, char* argv[])
 	niDepthStream.getProperty(XN_STREAM_PROPERTY_ZERO_PLANE_DISTANCE, &zeroPlaneDistance);
 	double depthFocalLength_VGA = zeroPlaneDistance / pixelSize;
 
-	
+
 
 	float minRange = 0;
 	float maxRange = 4000;
@@ -159,8 +140,11 @@ int main(int argc, char* argv[])
 	// Start loop
 	cv::Mat depthImage, matDepth16U;
 
+	vector<Mat> hundredDepths; // a buffer of 100 depth frames that we use to compute the std and mean of the depthstream 
+
 	while (true)
 	{
+
 		////
 		// Grab depth image
 		niDepthStream.readFrame(&niDepth);
@@ -168,7 +152,22 @@ int main(int argc, char* argv[])
 			matDepth16U = cv::Mat(nRows, nCols, CV_16UC1, (char*)niDepth.getData());
 			matDepth16U.convertTo(depthImage, CV_32FC1);
 			cv::flip(depthImage, depthImage, 1);
+
+			if (hundredDepths.size() == 100)
+			{
+				hundredDepths.erase(hundredDepths.begin());
+			}
+
+			if (hundredDepths.size() < 100)
+			{
+				hundredDepths.push_back(depthImage.clone());
+			}
+
+
 		}
+
+
+
 
 		// Grab color image
 		cv::Mat colorImage;
@@ -192,15 +191,97 @@ int main(int argc, char* argv[])
 		{
 			vector<Eigen::Vector4f> vertices;
 			vector<Vec3b> colors;
-			DepthImg2PointCloud(matDepth16U, colorImage, vertices, colors, depthFocalLength_VGA, px, py);
-			savePointCloudsPLY("D:\SavedpointClouds.ply", vertices, colors);
+			//DepthImg2PointCloud(matDepth16U, colorImage, vertices, colors, depthFocalLength_VGA, px, py);
+
+			for (int j = 0; j < matDepth16U.cols; j++)
+			{
+				for (int i = 0; i < matDepth16U.rows; i++)
+				{
+					auto point = Eigen::Vector4f((j - px)*matDepth16U.at<ushort>(i, j) / depthFocalLength_VGA, (i - py)*matDepth16U.at<ushort>(i, j) / depthFocalLength_VGA, matDepth16U.at<ushort>(i, j), 1);
+
+					// (3) Add the 3D point to vertices in point clouds data.
+					vertices.push_back(point);
+					// (4) Also compute the color of 3D point and add it to colors in point clouds data.
+					colors.push_back(colorImage.at<Vec3b>(i, j));
+
+				}
+			}
+
+			savePointCloudsPLY("SavedpointClouds.ply", vertices, colors);
 		}
 
 		////
 		// Compute standard deviation of depth stream and save it
 		if (key == 'd')
 		{
-			
+
+			if (hundredDepths.size() == 100)
+			{
+				Mat std(Size(hundredDepths[0].cols, hundredDepths[0].rows), CV_32FC1), mean(Size(hundredDepths[0].cols, hundredDepths[0].rows), CV_32FC1);
+				for (int x = 0; x < mean.rows; x++)
+
+				{
+					for (int y = 0; y < mean.cols; y++)
+
+					{
+
+						for (int i = 0; i < hundredDepths.size(); i++)
+
+						{
+
+						//	cout << hundredDepths[i] << "endl";
+							mean.at<float>(x, y) = mean.at<float>(x, y) +hundredDepths[i].at<float>(x, y);
+							cout << hundredDepths[i].at<float>(x, y) << endl;
+						}
+					}
+
+
+
+				}
+				mean /= 100.;
+
+				cout << mean << endl;
+
+
+				for (int i = 0; i < hundredDepths.size(); i++)
+				{
+					for (int x = 0; x < std.rows; x++)
+
+					{
+						for (int y = 0; y < std.cols; y++)
+
+						{
+							std.at<float>(x, y) += pow((hundredDepths[i].at<float>(x, y) - mean.at<float>(x, y)), 2);
+						}
+					}
+
+
+				}
+				std /= 100.;
+
+				for (int i = 0; i < hundredDepths.size(); i++)
+				{
+
+					for (int x = 0; x < std.rows; x++)
+					{
+						for (int y = 0; y < std.cols; y++)
+						{
+							std.at<float>(x, y) = sqrt(std.at<float>(x, y));//pow((hundredDepths[i].at<ushort>(x, y) - mean.at<ushort>(x, y)), 2);
+						}
+					}
+
+
+				}
+
+				imwrite("std.png", std);
+				imwrite("mean.png", mean);
+
+
+			}
+			else
+			{
+				cout << "Buffered only " << hundredDepths.size() << " still need " << 100 - hundredDepths.size() << " wait a bit and push d again" << endl;
+			}
 
 		}
 

@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
 		{
 			for (int i = 0; i < depthImg.rows; i++)
 			{
-				auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
+				auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i-py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
 
 
 				// (2) Translate 3D point in local coordinate system to 3D point in global coordinate system using camera pose.
