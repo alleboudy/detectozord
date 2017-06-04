@@ -1,5 +1,10 @@
+
+# Exercise5 notes:
+data/outcomes includes sample outcomes
+
 # Exercise4 notes:
 Visualization.ipynb is for problem number 4 Feature Visualization in the exercise
+
 under ssd/ is demo.py for problem number 5
 
 # Exercise3 notes:
