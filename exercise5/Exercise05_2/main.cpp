@@ -179,6 +179,7 @@ int main(int argc, char* argv[])
 		}
 
 		// Show images
+		cv::cvtColor(colorImage, colorImage, CV_BGR2RGB); //this will put colors right
 		cv::imshow("colorImage", colorImage);
 		cv::imshow("depthImage", convColoredDepth(depthImage, minRange, maxRange));
 		//cv::imwrite("depthImage.png", convColoredDepth(depthImage, minRange, maxRange));
