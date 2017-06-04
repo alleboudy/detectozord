@@ -175,13 +175,14 @@ int main(int argc, char* argv[])
 		niColorStream.readFrame(&niColor);
 		if (niColor.isValid()) {
 			colorImage = cv::Mat(nRows, nCols, CV_8UC3, (char*)niColor.getData());
-			//matDepth16U.convertTo(colorImage, CV_8UC3);
 			cv::flip(colorImage, colorImage, 1);
 		}
 
 		// Show images
+		cv::cvtColor(colorImage, colorImage, CV_BGR2RGB); //this will put colors right
 		cv::imshow("colorImage", colorImage);
 		cv::imshow("depthImage", convColoredDepth(depthImage, minRange, maxRange));
+		//cv::imwrite("depthImage.png", convColoredDepth(depthImage, minRange, maxRange));
 
 		int key = cv::waitKey(10);
 
@@ -217,64 +218,70 @@ int main(int argc, char* argv[])
 
 			if (hundredDepths.size() == 100)
 			{
-				Mat std(Size(hundredDepths[0].cols, hundredDepths[0].rows), CV_32FC1), mean(Size(hundredDepths[0].cols, hundredDepths[0].rows), CV_32FC1);
-				for (int x = 0; x < mean.rows; x++)
+				Mat stnd(Size(hundredDepths[0].cols, hundredDepths[0].rows), CV_32FC1), mean(Size(hundredDepths[0].cols, hundredDepths[0].rows), CV_32FC1);
+				mean *= 0.0;
+				stnd *= 0.0;
 
+				for (int i = 0; i < hundredDepths.size(); i++)
 				{
-					for (int y = 0; y < mean.cols; y++)
-
-					{
-
-						for (int i = 0; i < hundredDepths.size(); i++)
-
-						{
-
-						//	cout << hundredDepths[i] << "endl";
-							mean.at<float>(x, y) = mean.at<float>(x, y) +hundredDepths[i].at<float>(x, y);
-							cout << hundredDepths[i].at<float>(x, y) << endl;
-						}
-					}
-
-
-
+					mean = mean + hundredDepths[i];
 				}
+
 				mean /= 100.;
 
-				cout << mean << endl;
+				//	cout << mean << endl;
 
 
 				for (int i = 0; i < hundredDepths.size(); i++)
 				{
-					for (int x = 0; x < std.rows; x++)
-
+					for (int x = 0; x < stnd.rows; x++)
 					{
-						for (int y = 0; y < std.cols; y++)
-
+						for (int y = 0; y < stnd.cols; y++)
 						{
-							std.at<float>(x, y) += pow((hundredDepths[i].at<float>(x, y) - mean.at<float>(x, y)), 2);
+
+							stnd.at<float>(x, y) = stnd.at<float>(x, y) + pow((hundredDepths[i].at<float>(x, y) - mean.at<float>(x, y)), 2);
 						}
 					}
 
 
 				}
-				std /= 100.;
-
-				for (int i = 0; i < hundredDepths.size(); i++)
+				stnd /= 100.;
+				//cout << stnd;
+				for (int x = 0; x < stnd.rows; x++)
 				{
-
-					for (int x = 0; x < std.rows; x++)
+					for (int y = 0; y < stnd.cols; y++)
 					{
-						for (int y = 0; y < std.cols; y++)
-						{
-							std.at<float>(x, y) = sqrt(std.at<float>(x, y));//pow((hundredDepths[i].at<ushort>(x, y) - mean.at<ushort>(x, y)), 2);
-						}
+						stnd.at<float>(x, y) = sqrt(stnd.at<float>(x, y));
 					}
+				}
+				imwrite("std.png", convColoredDepth(stnd, minRange, maxRange));
+				imwrite("mean.png", convColoredDepth(mean, minRange, maxRange));
 
 
+
+
+				vector<Eigen::Vector4f> vertices;
+				vector<Vec3b> colors;
+				//DepthImg2PointCloud(matDepth16U, colorImage, vertices, colors, depthFocalLength_VGA, px, py);
+				
+				for (int j = 0; j < mean.cols; j++)
+				{
+					for (int i = 0; i < mean.rows; i++)
+					{
+						auto point = Eigen::Vector4f((j - px)*mean.at<float>(i, j) / depthFocalLength_VGA, (i - py)*mean.at<float>(i, j) / depthFocalLength_VGA, mean.at<float>(i, j), 1);
+
+						// (3) Add the 3D point to vertices in point clouds data.
+						vertices.push_back(point);
+						// (4) Also compute the color of 3D point and add it to colors in point clouds data.
+						Vec3b b;
+						b[0] = b[1] = b[2] = stnd.at<float>(i, j);
+						colors.push_back(b);
+
+					}
 				}
 
-				imwrite("std.png", std);
-				imwrite("mean.png", mean);
+				savePointCloudsPLY("mean.ply", vertices, colors);
+
 
 
 			}
