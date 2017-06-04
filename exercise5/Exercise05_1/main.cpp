@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
 
 	}
 	// Save point clouds
-	savePointCloudsPLY("pointClouds.ply", vertices, colors);
+	savePointCloudsPLY("testpointClouds.ply", vertices, colors);
 
 	return 0;
 }

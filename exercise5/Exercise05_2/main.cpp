@@ -274,7 +274,8 @@ int main(int argc, char* argv[])
 						vertices.push_back(point);
 						// (4) Also compute the color of 3D point and add it to colors in point clouds data.
 						Vec3b b;
-						b[0] = b[1] = b[2] = stnd.at<float>(i, j);
+						b[0]  = stnd.at<float>(i, j);
+						b[1] = b[2] = 0;//kept it to only one channel so that we see some colors :D
 						colors.push_back(b);
 
 					}
