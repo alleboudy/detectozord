@@ -32,6 +32,11 @@ if(OPENNI2_FOUND)
 	include_directories(${OPENNI2_INCLUDE_DIR})
 endif(OPENNI2_FOUND)
 
+find_package(OpenNI2 REQUIRED)
+if(OPENNI2_INCLUDE_DIR)
+	include_directories(${OPENNI2_INCLUDE_DIR})
+endif(OPENNI2_INCLUDE_DIR)
+
 add_definitions( -DPROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"  )
 
 ###########################################################################################
