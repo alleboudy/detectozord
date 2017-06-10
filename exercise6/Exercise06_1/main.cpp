@@ -42,9 +42,24 @@ int main(int argc, char **argv)
     {
         viewer->spinOnce(100);
     }
+
     // Compute normals of the point clouds
+    NormalEstimation<PointXYZ, Normal> ne;
+    ne.setInputCloud(cloud);
+    search::KdTree<PointXYZ>::Ptr tree(new search::KdTree<PointXYZ>());
+    ne.setSearchMethod(tree);
+    ne.setRadiusSearch(0.01f);
+    PointCloud<Normal>::Ptr cloud_normals(new PointCloud<Normal>());
+    ne.compute(*cloud_normals);
 
     // Visualize the point clouds with computed normals
+    viewer->addPointCloudNormals<PointXYZ, Normal>(cloud, cloud_normals, 1, 0.01, "normals");
+    viewer->setPointCloudRenderingProperties(visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "normals");
+
+    while (!viewer->wasStopped())
+    {
+        viewer->spinOnce(100);
+    }
 
     return 0;
 }
