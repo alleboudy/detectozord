@@ -32,6 +32,12 @@ if(OPENNI2_FOUND)
 	include_directories(${OPENNI2_INCLUDE_DIR})
 endif(OPENNI2_FOUND)
 
+## OpenNI2 linux
+find_package(OPENNI2 REQUIRED)
+if(OPENNI2_INCLUDE_DIR)
+    include_directories(${OPENNI2_INCLUDE_DIR})
+endif(OPENNI2_INCLUDE_DIR)
+
 
 ## PCL
 find_package(PCL)
