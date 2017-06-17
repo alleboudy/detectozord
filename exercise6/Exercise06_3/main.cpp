@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
@@ -6,7 +5,6 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/registration/icp.h>
 #include <pcl/filters/voxel_grid.h>
-
 #include <fstream>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>

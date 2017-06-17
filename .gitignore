@@ -293,6 +293,6 @@ main.1.cpp
 #exercise3
 .ipynb_checkpoints/
 __pycache__/
-data/
+exercise3/data/
 log/
 checkpoints/
