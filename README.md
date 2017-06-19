@@ -1,5 +1,5 @@
 # Exercise6 notes:
-Question 6.b a reference image for the registeration isn't provided, 
+Question 6.b a reference cloud for the registeration isn't provided, 
 perhaps we should fix one of the clouds as a reference, 
 but then the point2point metric will fail as the clouds are taken from different sides of the head?
 Also, an issue we are having since last exercise, the clouds are always shown inverted,
