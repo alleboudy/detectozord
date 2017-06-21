@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 		ne.setInputCloud(downSampledCloud);
 		pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB>());
 		ne.setSearchMethod(tree);
-		ne.setRadiusSearch(0.0001f);
+		ne.setRadiusSearch(0.01f);
 		pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
 		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloudWithnormals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 

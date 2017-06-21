@@ -1,5 +1,8 @@
 # Exercise6 notes:
 Question 6.3.b setting the first cloud as referece, the result seems to align all of the clouds to it, not benefiting from the plane
+and in my dev environment I got some breakpoint errors in visual studio, clicking continue (several times) made it work eventually for the ex 6.3.b point, unfortunately, unable to get a readable error from it
+also, the clouds when plotted are always shown flipped since ex5, perhaps we are missing some small detail?
+
 
 # Exercise5 notes:
 data/outcomes includes sample outcomes
