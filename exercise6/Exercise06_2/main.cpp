@@ -25,7 +25,8 @@ main(int argc, char** argv)
 	pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
 	icp.setInputCloud(cloud_ref);
 	icp.setInputTarget(cloud_trg);
-
+	icp.setMaximumIterations(500);
+	//icp.setMaxCorrespondenceDistance(0.1f);
 	pcl::PointCloud<pcl::PointXYZRGB> registered;
 	icp.align(registered);
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr registeredptr(&registered);
