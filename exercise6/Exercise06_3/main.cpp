@@ -58,8 +58,8 @@ int main(int argc, char **argv)
 
 				cloud->push_back(p);
 				/*	vertices.push_back(point);
-					// (4) Also compute the color of 3D point and add it to colors in point clouds data.
-					colors.push_back(colorImg.at<Vec3b>(i, j));*/
+				// (4) Also compute the color of 3D point and add it to colors in point clouds data.
+				colors.push_back(colorImg.at<Vec3b>(i, j));*/
 
 
 			}
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 
 		// Visualize the point clouds
 
-		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
+			boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
 		viewer->setBackgroundColor(0, 0, 0);
 		viewer->addPointCloud<pcl::PointXYZRGB>(downSampledCloud, "img" + i);
 		viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "img" + i);
@@ -87,14 +87,15 @@ int main(int argc, char **argv)
 		viewer->resetCameraViewpoint();
 		while (!viewer->wasStopped())
 		{
-			viewer->spinOnce(100);
+		viewer->spinOnce(100);
 		}
 		// Save the point clouds as [.pcd] file
 		std::string pointFilename = projectSrcDir + "/data/pointclouds/pointclouds" + std::to_string(i) + ".pcd";
 		pcl::io::savePCDFileASCII(pointFilename, *downSampledCloud);
 		std::cerr << "Saved " << i << std::endl;
+		
 		pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> ne;
-		ne.useSensorOriginAsViewPoint();
+		//ne.useSensorOriginAsViewPoint();
 		ne.setInputCloud(downSampledCloud);
 		pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB>());
 		ne.setSearchMethod(tree);
@@ -130,6 +131,7 @@ int main(int argc, char **argv)
 
 	icp.setInputCloud(clouds2[i]);
 	icp.setInputTarget(clouds2[0]);
+	icp.setMaximumIterations(100);
 	icp.align(registered);
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr registeredptr(&registered);
 
@@ -137,8 +139,8 @@ int main(int argc, char **argv)
 	icp.getFitnessScore() << std::endl;
 	std::cout << icp.getFinalTransformation() << std::endl;
 
-	viewer->addPointCloud<pcl::PointXYZRGB>(registeredptr, "registeredptr");
-	viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "registeredptr");
+	viewer->addPointCloud<pcl::PointXYZRGB>(registeredptr, "registeredptr"+to_string(i));
+	viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "registeredptr" + to_string(i));
 	viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "cloud_ref");
 	viewer->initCameraParameters();
 
@@ -148,45 +150,63 @@ int main(int argc, char **argv)
 	{
 	viewer->spinOnce(100);
 	}
-
 	*/
+	
 
 
 	// Then you can try pcl::IterativeClosestPointWithNormals which is an ICP implementation using point to plane metrics instead.
 	// In case of point to plane metrics, you need to compute normals of point clouds.
-
+	
 	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
 	viewer->setBackgroundColor(0, 0, 0);
 	viewer->addPointCloud<pcl::PointXYZRGBNormal>(clouds[0], "cloud_ref");
-	viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "cloud_ref");
+	viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "cloud_ref");
+	
+	pcl::IterativeClosestPointWithNormals<pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal> icp;
+	pcl::PointCloud<pcl::PointXYZRGBNormal> registered;
+//	icp.setInputTarget(clouds[0]);
+	cout << "setMaxCorrespondenceDistance" << endl;
+	// Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
+	icp.setMaxCorrespondenceDistance(0.03);
+	// Set the maximum number of iterations (criterion 1)
+	cout << "setMaximumIterations" << endl;
 
+	icp.setMaximumIterations(100);
+	// Set the transformation epsilon (criterion 2)
+	cout << "setTransformationEpsilon" << endl;
 
-	for (int i = 1; i < clouds.size(); i++)
+	//icp.setTransformationEpsilon(1e-4);
+	// Set the euclidean distance difference epsilon (criterion 3)
+	cout << "setEuclideanFitnessEpsilon" << endl;
+	//icp.setEuclideanFitnessEpsilon(0.03);
+	pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr registeredptr(&registered);
+
+	for (int i = 1; i <clouds.size(); i++)
 	{
-		pcl::IterativeClosestPointWithNormals<pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal> icp;
-		pcl::PointCloud<pcl::PointXYZRGBNormal> registered;
+		cout << "i:"+to_string(i) << endl;
+		//if (i==1)
+		icp.setInputTarget(clouds[0]);
+		//else
+			//icp.setInputTarget(registeredptr);
 
 		icp.setInputCloud(clouds[i]);
-		icp.setInputTarget(clouds[0]);
-
+		cout << "align" << endl;
 		icp.align(registered);
-		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr registeredptr(&registered);
-
 		std::cout << "has converged:" << icp.hasConverged() << " score: " <<
 			icp.getFitnessScore() << std::endl;
 		std::cout << icp.getFinalTransformation() << std::endl;
-
-
-		viewer->addPointCloud<pcl::PointXYZRGBNormal>(registeredptr, "registeredptr" + i);
-		viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "registeredptr" + i);
-
+		cout << "registeredptr" + to_string(i) << endl;
+		viewer->addPointCloud<pcl::PointXYZRGBNormal>(registeredptr, "registeredptr" + to_string(i));
+		viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "registeredptr" + to_string(i));
+		
 	}
 	viewer->initCameraParameters();
 	while (!viewer->wasStopped())
 	{
 		viewer->spinOnce(100);
 	}
+	cout << "Stopped" << endl;
 	// Visualize the registered and merged point clouds
-
+	
 	return 0;
 }

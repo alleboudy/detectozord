@@ -25,10 +25,23 @@ main(int argc, char** argv)
 	pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
 	icp.setInputCloud(cloud_ref);
 	icp.setInputTarget(cloud_trg);
-	icp.setMaximumIterations(500);
+	cout << "setting icp parameters" << endl;
+	
+	// Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
+	icp.setMaxCorrespondenceDistance(0.05);
+	// Set the maximum number of iterations (criterion 1)
+	//icp.setMaximumIterations(50);
+	// Set the transformation epsilon (criterion 2)
+	//icp.setTransformationEpsilon(1e-8);
+	// Set the euclidean distance difference epsilon (criterion 3)
+	icp.setEuclideanFitnessEpsilon(1);
+
+	
 	//icp.setMaxCorrespondenceDistance(0.1f);
 	pcl::PointCloud<pcl::PointXYZRGB> registered;
+	cout << "starting icp align" << endl;
 	icp.align(registered);
+	cout << "done!" << endl;
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr registeredptr(&registered);
 
 	std::cout << "has converged:" << icp.hasConverged() << " score: " <<
