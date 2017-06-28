@@ -89,20 +89,21 @@ main(int argc, char** argv)
 	pcl::PointCloud<pcl::PointXYZRGBA> sceneSampledCloud;
 	uniform_sampling.setInputCloud(scenelCloud);
 	uniform_sampling.filter(sceneSampledCloud);
-
+	cout << "sampled sceneSampledCloud :" + to_string(sceneSampledCloud.size()) << endl;
 	uniform_sampling.setRadiusSearch(0.02f); //the 3D grid leaf size
 
 	pcl::PointCloud<pcl::PointXYZRGBA> modelSampledCloud;
 	uniform_sampling.setInputCloud(modelCloud);
 	uniform_sampling.filter(modelSampledCloud);
 
+	cout << "sampled modelSampledCloud :" + to_string(modelSampledCloud.size()) << endl;
 
 
 
 	//// c) Compute descriptor for keypoints
 	cout << "c) Compute descriptor for keypoints" << endl;
 	pcl::SHOTEstimationOMP<pcl::PointXYZRGBA, pcl::Normal, pcl::SHOT352> describer;
-	describer.setRadiusSearch(0.01f);
+	describer.setRadiusSearch(0.02f);
 
 	pcl::PointCloud<pcl::SHOT352>::Ptr modelDescriptors(new pcl::PointCloud<pcl::SHOT352>);
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelSampledCloudPtr(&modelSampledCloud);
@@ -177,19 +178,64 @@ main(int argc, char** argv)
 	}*/
 	//// e) Cluster geometrical correspondence, and finding object instances
 	cout << "e) Cluster geometrical correspondence, and finding object instances" << endl;
-	std::vector<pcl::Correspondences> clusters; //output
+	//std::vector<pcl::Correspondences> clusters; //output
 	pcl::GeometricConsistencyGrouping<pcl::PointXYZRGBA, pcl::PointXYZRGBA> gc_clusterer;
-	gc_clusterer.setGCSize(0.5f); //1st param
-	gc_clusterer.setGCThreshold(3); //2nd param
+	gc_clusterer.setGCSize(0.01f); //1st param
+	gc_clusterer.setGCThreshold(5); //2nd param
 	gc_clusterer.setInputCloud(modelSampledCloudPtr);
 	gc_clusterer.setSceneCloud(sceneSampledCloudPtr);
 	gc_clusterer.setModelSceneCorrespondences(model_scene_corrs);
-	gc_clusterer.cluster(clusters);
+	std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> >
+		rototranslations;
+	std::vector < pcl::Correspondences > clustered_corrs;
+	gc_clusterer.recognize(rototranslations, clustered_corrs);
+	if (rototranslations.size() <= 0)
+	{
+		cout << "no instances found, exiting" << endl;
+		return (0);
+	}
+	else
+	{
+		cout << "number of instances: " << rototranslations.size() << endl << endl;
+
+
+	}
+	std::vector<pcl::PointCloud<PointType>::ConstPtr> instances;
+	for (size_t i = 0; i < rototranslations.size(); ++i)
+	{
+		pcl::PointCloud<PointType>::Ptr rotated_model(new pcl::PointCloud<PointType>());
+		pcl::transformPointCloud(*modelCloud, *rotated_model, rototranslations[i]);
+		instances.push_back(rotated_model);
+	}
+	cout << "f) Refine pose of each instance by using ICP" << endl;
+
+	std::vector<pcl::PointCloud<PointType>::ConstPtr> registeredModelClusteredKeyPoints;// (new pcl::PointCloud<PointType>());
+
+	for (size_t i = 0; i < rototranslations.size(); ++i)
+	{
+		pcl::IterativeClosestPoint<PointType, PointType> icp;
+		icp.setMaximumIterations(5);
+		icp.setMaxCorrespondenceDistance(0.005);
+		icp.setInputTarget(scenelCloud);
+		icp.setInputSource(instances[i]);
+		pcl::PointCloud<PointType>::Ptr registered(new pcl::PointCloud<PointType>);
+		icp.align(*registered);
+		registeredModelClusteredKeyPoints.push_back(registered);
+		cout << "cluster " << i << " ";
+		if (icp.hasConverged())
+		{
+			cout << "is aligned" << endl;
+		}
+		else
+		{
+			cout << "not aligned" << endl;
+		}
+	}
+
+	//gc_clusterer.cluster(clusters);
 
 	//// f) Refine pose of each instance by using ICP
-	cout << "f) Refine pose of each instance by using ICP" << endl;
-	vector<pcl::PointCloud<PointType>::Ptr> modelClusteredKeyPoints;//(new pcl::PointCloud<PointType>());
-	std::vector<pcl::PointCloud<PointType>::ConstPtr> registeredModelClusteredKeyPoints;// (new pcl::PointCloud<PointType>());
+/*	vector<pcl::PointCloud<PointType>::Ptr> modelClusteredKeyPoints;//(new pcl::PointCloud<PointType>());
 
 	vector<pcl::PointCloud<PointType>::Ptr> sceneClusteredKeyPoints;// (new pcl::PointCloud<PointType>());
 	vector<vector<int>> modelClusteredKPindices;
@@ -228,9 +274,9 @@ main(int argc, char** argv)
 		cout << "setting icp parameters" << endl;
 
 		// Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
-		icp.setMaxCorrespondenceDistance(0.05);
+		icp.setMaxCorrespondenceDistance(0.005);
 		// Set the maximum number of iterations (criterion 1)
-		//icp.setMaximumIterations(50);
+		icp.setMaximumIterations(5);
 		// Set the transformation epsilon (criterion 2)
 		//icp.setTransformationEpsilon(1e-8);
 		// Set the euclidean distance difference epsilon (criterion 3)
@@ -242,7 +288,7 @@ main(int argc, char** argv)
 		//icp.setMaximumIterations(50);
 		//icp.setMaxCorrespondenceDistance(0.005);
 		pcl::PointCloud<PointXYZRGBA>::Ptr registered(new pcl::PointCloud<PointXYZRGBA>);
-
+		
 		icp.align(*registered);
 
 		cout << "done!" << endl;
@@ -253,28 +299,48 @@ main(int argc, char** argv)
 		//	registeredptr.reset();
 
 	}
-
+	*/
 	//// g) Do hypothesis verification
 	cout << "g) Do hypothesis verification" << endl;
-	pcl::GreedyVerification<pcl::PointXYZRGBA,
+
+	pcl::GlobalHypothesesVerification<PointType, PointType> GoHv;
+	GoHv.setSceneCloud(scenelCloud); 
+	GoHv.addModels(registeredModelClusteredKeyPoints, true); 
+	GoHv.setInlierThreshold(0.05f);
+	GoHv.setOcclusionThreshold(0.01);
+	GoHv.setRegularizer(3);
+	GoHv.setRadiusClutter(0.03);
+	GoHv.setClutterRegularizer(5);
+	GoHv.setDetectClutter(true);
+
+
+	GoHv.setRadiusNormals(0.05f);
+	GoHv.verify();
+	std::vector<bool> mask_hv;
+
+	GoHv.getMask(mask_hv); 
+
+
+
+
+	/*pcl::GreedyVerification<pcl::PointXYZRGBA,
 		pcl::PointXYZRGBA> greedy_hv(3);
 	greedy_hv.setResolution(0.02f); //voxel grid is applied beforehand
-	greedy_hv.setInlierThreshold(0.05f);
+	greedy_hv.setInlierThreshold(0.005f);
 	greedy_hv.setOcclusionThreshold(0.01);
-
+	
 	greedy_hv.setSceneCloud(scenelCloud);
 	greedy_hv.addModels(registeredModelClusteredKeyPoints, true);
 	greedy_hv.verify();
 	std::vector<bool> mask_hv;
-	greedy_hv.getMask(mask_hv);
+	greedy_hv.getMask(mask_hv);*/
 
 	/// Visualize detection result
 
 	cout << "Visualize detection result" << endl;
 	pcl::visualization::PCLVisualizer viewer("3d viewer");
 	viewer.addPointCloud(scenelCloud, "scene");
-	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 4, "scene");
-	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY, 255, "scene");
+	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
 
 	//viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 1, 1, "scene");
 
@@ -283,19 +349,22 @@ main(int argc, char** argv)
 	for (size_t i = 0; i < registeredModelClusteredKeyPoints.size(); i++)
 	{
 
-		viewer.addPointCloud(registeredModelClusteredKeyPoints[i], "instance" + to_string(i));
 		if (mask_hv[i])
 		{
+			viewer.addPointCloud(registeredModelClusteredKeyPoints[i], "instance" + to_string(i));
+
+			cout << "instance" + to_string(i)+ " good" << endl;
 			viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "instance" + to_string(i));
 
 		}
 		else
 		{
+			cout << "instance" + to_string(i) + " bad" << endl;
 
-			viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "instance" + to_string(i));
+		//	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "instance" + to_string(i));
 
 		}
-		viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 4, "instance" + to_string(i));
+		viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance" + to_string(i));
 
 	}
 
