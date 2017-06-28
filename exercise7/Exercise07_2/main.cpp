@@ -35,8 +35,11 @@ main (int argc, char** argv)
     
     //// Load Point clouds (3 models and 2 scenes)
     pcl::PointCloud<PointType>::Ptr model (new pcl::PointCloud<PointType> ());
-    std::string model_filename_ = projectSrcDir + "/Data/model_house.pcd";
+	std::string model_filename_ = projectSrcDir + "/Data/model_house.pcd";
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+	if (pcl::io::loadPCDFile<pcl::PointXYZRGBA>(model_filename_, *modelCloud) == -1){ PCL_ERROR("Couldn't read file model.pcd \n"); return (-1); }
+	std::cout << "Loaded" << modelCloud->width * modelCloud->height << "points" << std::endl;
+
 	for (size_t i = 0; i < modelCloud->size(); i++)
 	{
 		modelCloud->at(i).a = 255;
@@ -48,6 +51,8 @@ main (int argc, char** argv)
     std::string scene_filename_ = projectSrcDir + "/Data/scene_clutter.pcd";
    // std::string scene_filename_ = projectSrcDir + "/Data/scene_planar.pcd";
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr scenelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+	if (pcl::io::loadPCDFile<pcl::PointXYZRGBA>(scene_filename_, *scenelCloud) == -1){ PCL_ERROR("Couldn't read file scene.pcd \n"); return (-1); }
+	std::cout << "Loaded" << scenelCloud->width * scenelCloud->height << "points" << std::endl;
 
 	for (size_t j = 0; j < scenelCloud->size(); j++)
 	{
