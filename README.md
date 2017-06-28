@@ -1,7 +1,10 @@
+# Exercise7 notes:
+After multiple tries we settled on using global hypothesis verification instead of the greedy one 
+the implementation of greedy is left commented in both problems for validation
+We still need to better tune the parameters of the pipeline, however. 
+
 # Exercise6 notes:
-Question 6.3.b setting the first cloud as referece, the result seems to align all of the clouds to it, not benefiting from the plane
-and in my dev environment I got some breakpoint errors in visual studio, clicking continue (several times) made it work eventually for the ex 6.3.b point, unfortunately, unable to get a readable error from it
-also, the clouds when plotted are always shown flipped since ex5, perhaps we are missing some small detail?
+issues with the parameters are fixed for Ex6.2 and it perfectly aligens, however, ex6.3 aren't perfectly aligned unfortunately, would appreciate any pointers or guidelines, thanks.
 
 
 # Exercise5 notes:
