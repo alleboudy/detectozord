@@ -66,19 +66,28 @@ main(int argc, char** argv)
 
 	//// a) Compute normals
 
+
+
 	cout << "a) Compute normals" << endl;
 
 	pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
-	pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGBA>());
-	ne.setSearchMethod(tree);
-	ne.setRadiusSearch(0.01f);
+	//pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGBA>());
+	//ne.setSearchMethod(tree);
+	//ne.setRadiusSearch(0.01f);
 
 	ne.setInputCloud(modelCloud);
 	pcl::PointCloud<pcl::Normal>::Ptr model_normals(new pcl::PointCloud<pcl::Normal>);
-	ne.compute(*model_normals);
+	//ne.compute(*model_normals);
 
 	ne.setInputCloud(scenelCloud);
 	pcl::PointCloud<pcl::Normal>::Ptr scene_normals(new pcl::PointCloud<pcl::Normal>);
+	//ne.compute(*scene_normals);
+
+	
+	ne.setKSearch(10);
+	ne.setInputCloud(modelCloud);
+	ne.compute(*model_normals);
+	ne.setInputCloud(scenelCloud);
 	ne.compute(*scene_normals);
 
 	//// b) Extract key-points from point clouds by downsampling point clouds
@@ -215,7 +224,8 @@ main(int argc, char** argv)
 	{
 		pcl::IterativeClosestPoint<PointType, PointType> icp;
 		icp.setMaximumIterations(5);
-		icp.setMaxCorrespondenceDistance(0.005);
+		icp.setMaxCorrespondenceDistance(0.1);
+		icp.setUseReciprocalCorrespondences(true);
 		icp.setInputTarget(scenelCloud);
 		icp.setInputSource(instances[i]);
 		pcl::PointCloud<PointType>::Ptr registered(new pcl::PointCloud<PointType>);
@@ -306,8 +316,8 @@ main(int argc, char** argv)
 	pcl::GlobalHypothesesVerification<PointType, PointType> GoHv;
 	GoHv.setSceneCloud(scenelCloud); 
 	GoHv.addModels(registeredModelClusteredKeyPoints, true); 
-	GoHv.setInlierThreshold(0.05f);
-	GoHv.setOcclusionThreshold(0.01);
+	GoHv.setInlierThreshold(0.5f);
+	GoHv.setOcclusionThreshold(0.1);
 	GoHv.setRegularizer(3);
 	GoHv.setRadiusClutter(0.03);
 	GoHv.setClutterRegularizer(5);
@@ -369,7 +379,7 @@ main(int argc, char** argv)
 	}
 
 
-	while (!viewer.wasStopped())
+	while (!viewer.wasStopped())  
 	{
 		viewer.spinOnce();
 	}
