@@ -70,7 +70,7 @@ int main(int argc, char** argv)
 	string projectRGBSrcDir = "";
 	string projectDepthSrcDir = "";
 
-	for (int index = 0; index < models.size(); index++)//Looping over the mdoels folders
+	for (int index = 0; index < models.size(); index++)//Looping over the models folders
 	{
 
 		modelMainPath = projectSrcDir + "/data/challenge_train/train/" + models[index];
@@ -136,7 +136,7 @@ int main(int argc, char** argv)
 			processingRotationValues = !processingRotationValues;
 		}
 
-
+		int i = 0;
 		for (auto it : recursive_directory_range(projectRGBSrcDir))
 		{
 			// Loading depth image and color image
@@ -150,84 +150,89 @@ int main(int argc, char** argv)
 			string depthFilename = path;
 			//cout << path << endl;
 
-
-
-
-
 			Mat depthImg = imread(depthFilename, CV_LOAD_IMAGE_UNCHANGED);
 			Mat colorImg = imread(colorFilename, CV_LOAD_IMAGE_UNCHANGED);
 
-				// Loading camera pose
+			// Loading camera pose
+			string poseFilename = projectSrcDir + "/data/pose/pose" + to_string(index) + ".txt";
+			Eigen::Matrix4f poseMat;   // 4x4 transformation matrix
 
+			vector<float> rotationValues = rotationValuesList[i];
+			vector<float> translationsValues = translationValuesList[i];
+			vector<float> camIntrinsicParams = cameraIntrinsicParamtersList[i++];
+
+			poseMat(0,0) = rotationValues[0];
+			poseMat(0,1) = rotationValues[1];
+			poseMat(0,2) = rotationValues[2];
+			poseMat(0,3) = translationsValues[0];
+			poseMat(1,0) = rotationValues[3];
+			poseMat(1,1) = rotationValues[4];
+			poseMat(1,2) = rotationValues[5];
+			poseMat(1,3) = translationsValues[1];
+			poseMat(2,0) = rotationValues[6];
+			poseMat(2,1) = rotationValues[7];
+			poseMat(2,2) = rotationValues[8];
+			poseMat(2,3) = translationsValues[2];
+			poseMat(3,0) = 0;
+			poseMat(3,1) = 0;
+			poseMat(3,2) = 0;
+			poseMat(3,3) = 1;
+
+			//cout << "Transformation matrix" << endl << poseMat << endl;
+
+			// Setting camera intrinsic parameters of depth camera
+			float focal = camIntrinsicParams[0];  // focal length
+			float px = camIntrinsicParams[2]; // principal point x
+			float py = camIntrinsicParams[5]; // principal point y
 			
-			
-
-			//	string poseFilename = projectSrcDir + "/data/pose/pose" + to_string(index) + ".txt";
-			//	Eigen::Matrix4f poseMat;   // 4x4 transformation matrix
-			//	loadCameraPose(poseFilename, poseMat);
-			//	cout << "Transformation matrix" << endl << poseMat << endl;
-
-			//	// Setting camera intrinsic parameters of depth camera
-			//	float focal = 570.f;  // focal length
-			//	float px = 319.5f; // principal point x
-			//	float py = 239.5f; // principal point y
+			vector<Eigen::Vector4f> vertices;
+			vector<Vec3b> colors;
 
 
+			// Create point clouds from depth image and color image using camera intrinsic parameters
+			// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
+			for (int j = 0; j < depthImg.cols; j++)
+			{
+				for (int i = 0; i < depthImg.rows; i++)
+				{
+					auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j),1);
 
-			//	// Create point clouds from depth image and color image using camera intrinsic parameters
-			//	// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
-			//	for (int j = 0; j < depthImg.cols; j++)
-			//	{
-			//		for (int i = 0; i < depthImg.rows; i++)
-			//		{
-			//			auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
-
-
-			//			// (2) Translate 3D point in local coordinate system to 3D point in global coordinate system using camera pose.
-			//			point = poseMat *point;
-			//			// (3) Add the 3D point to vertices in point clouds data.
-			//			vertices.push_back(point);
-			//			// (4) Also compute the color of 3D point and add it to colors in point clouds data.
-			//			colors.push_back(colorImg.at<Vec3b>(i, j));
-
-			//		}
-			//	}
-
-			//}
+					// (2) Translate 3D point in local coordinate system to 3D point in global coordinate system using camera pose.
+					point = poseMat *point;
+					// (3) Add the 3D point to vertices in point clouds data.
+					vertices.push_back(point);
+					// (4) Also compute the color of 3D point and add it to colors in point clouds data.
+					colors.push_back(colorImg.at<Vec3b>(i, j));
+				}
+			}
 
 
+			//// a) Load Point clouds (model and scene)
+			/*cout << "a) Load Point clouds (model and scene)" << endl;
+			std::string model_filename_ = projectSrcDir + "/Data/model_house.pcd";
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+
+			if (pcl::io::loadPCDFile<pcl::PointXYZRGBA>(model_filename_, *modelCloud) == -1){ PCL_ERROR("Couldn't read file model.pcd \n"); return (-1); }
+			std::cout << "Loaded" << modelCloud->width * modelCloud->height << "points" << std::endl;
+
+			for (size_t i = 0; i < modelCloud->size(); i++)
+			{
+				modelCloud->at(i).a = 255;
+			}
 
 
+			std::string scene_filename_ = projectSrcDir + "/Data/scene_clutter.pcd";
+
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr scenelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+			if (pcl::io::loadPCDFile<pcl::PointXYZRGBA>(scene_filename_, *scenelCloud) == -1){ PCL_ERROR("Couldn't read file scene.pcd \n"); return (-1); }
+			std::cout << "Loaded" << scenelCloud->width * scenelCloud->height << "points" << std::endl;
 
 
+			for (size_t j = 0; j < scenelCloud->size(); j++)
+			{
+				scenelCloud->at(j).a = 255;
 
-
-			////// a) Load Point clouds (model and scene)
-			//cout << "a) Load Point clouds (model and scene)" << endl;
-			//std::string model_filename_ = projectSrcDir + "/Data/model_house.pcd";
-			//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
-
-			//if (pcl::io::loadPCDFile<pcl::PointXYZRGBA>(model_filename_, *modelCloud) == -1){ PCL_ERROR("Couldn't read file model.pcd \n"); return (-1); }
-			//std::cout << "Loaded" << modelCloud->width * modelCloud->height << "points" << std::endl;
-
-			//for (size_t i = 0; i < modelCloud->size(); i++)
-			//{
-			//	modelCloud->at(i).a = 255;
-			//}
-
-
-			//std::string scene_filename_ = projectSrcDir + "/Data/scene_clutter.pcd";
-
-			//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr scenelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
-			//if (pcl::io::loadPCDFile<pcl::PointXYZRGBA>(scene_filename_, *scenelCloud) == -1){ PCL_ERROR("Couldn't read file scene.pcd \n"); return (-1); }
-			//std::cout << "Loaded" << scenelCloud->width * scenelCloud->height << "points" << std::endl;
-
-
-			//for (size_t j = 0; j < scenelCloud->size(); j++)
-			//{
-			//	scenelCloud->at(j).a = 255;
-
-			//}
+			}*/
 
 
 
