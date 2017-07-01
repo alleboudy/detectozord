@@ -1,6 +1,6 @@
 1- Load each RGB image, its corresponding depth image and their provided camera parameters and rotation and translation 
 
-2- Create their clouds
+2- Create their clouds (ex. 5.2)
 
 3- Load the scene RGB image and its depth 
 

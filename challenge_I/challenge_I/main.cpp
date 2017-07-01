@@ -1,6 +1,7 @@
 #include <sstream>
 #include <string>
 
+// including pcl headers
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/correspondence.h>
@@ -20,10 +21,14 @@
 #include <pcl/keypoints/iss_3d.h>
 #include <pcl/recognition/hv/greedy_verification.h>
 #include <pcl/io/ply_io.h>
+
+// including boost headers
 #include <boost/algorithm/string/replace.hpp>
-
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/lexical_cast.hpp>
 
+// including opencv2 headers
 #include <opencv2/imgproc.hpp>
 #include "opencv2/opencv.hpp"
 #include "opencv2/highgui/highgui.hpp"
@@ -55,15 +60,7 @@ struct recursive_directory_range
 	path p_;
 };
 
-
-
-
-
-//--
-
-
-int
-main(int argc, char** argv)
+int main(int argc, char** argv)
 {
 	std::string projectSrcDir = PROJECT_SOURCE_DIR;
 
@@ -73,7 +70,6 @@ main(int argc, char** argv)
 	string projectRGBSrcDir = "";
 	string projectDepthSrcDir = "";
 
-
 	for (int index = 0; index < models.size(); index++)//Looping over the mdoels folders
 	{
 
@@ -81,45 +77,63 @@ main(int argc, char** argv)
 		projectRGBSrcDir = modelMainPath + "/rgb";
 		projectDepthSrcDir = modelMainPath + "/depth";
 		std::string line;
-		std::ifstream infile(modelMainPath + "/info.yml");
-		vector<vector<float>> cameraIntrinsicParamters;
-		while (std::getline(infile, line))
+
+		// loading camera intrinsic parameters
+		std::ifstream ifStreamInfo(modelMainPath + "/info.yml");
+		vector<vector<float>> cameraIntrinsicParamtersList;
+		while (std::getline(ifStreamInfo, line))
 		{
 			std::istringstream iss(line);
 			if (isdigit(line[0]))
 				continue;
-
-			
 			unsigned first = line.find("[");
 			unsigned last = line.find("]");
 			string strNew = line.substr(first+1, last - first-1);
-			
-			
 			std::vector<float> camIntrinsicParams;
-
 			std::stringstream ss(strNew);
-
 			string i;
-
 			while (ss >> i)
 			{
 				boost::replace_all(i, ",", "");
-
-
 				camIntrinsicParams.push_back(atof(i.c_str()));
 			}
-
-			
-			cameraIntrinsicParamters.push_back(camIntrinsicParams);
-
-
-
-			//convertToFloat
-
-
-
-
-			// process pair (a,b)
+			cameraIntrinsicParamtersList.push_back(camIntrinsicParams);
+		}
+		// loading rotation and transformation matrices for all models
+		vector<vector<float>> rotationValuesList;
+		vector<vector<float>> translationValuesList;
+		std::ifstream ifStreamGT(modelMainPath + "/gt.yml");
+		bool processingRotationValues = true;
+		while (std::getline(ifStreamGT, line))
+		{
+			std::istringstream iss(line);
+			if (isdigit(line[0]) || boost::starts_with(line, "  obj_id:")){
+				continue;
+			}
+			unsigned first = line.find("[");
+			unsigned last = line.find("]");
+			string strNew = line.substr(first + 1, last - first - 1);
+			std::vector<float> rotationValues;
+			std::vector<float> translationValues;
+			std::stringstream ss(strNew);
+			string i;
+			while (ss >> i)
+			{
+				boost::replace_all(i, ",", "");
+				if (processingRotationValues){
+					rotationValues.push_back(atof(i.c_str()));
+				}
+				else{
+					translationValues.push_back(atof(i.c_str()));
+				}
+			}
+			if (processingRotationValues){
+				rotationValuesList.push_back(rotationValues);
+			}
+			else{
+				translationValuesList.push_back(translationValues);
+			}
+			processingRotationValues = !processingRotationValues;
 		}
 
 
