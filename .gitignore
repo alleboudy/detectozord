@@ -296,3 +296,6 @@ __pycache__/
 exercise3/data/
 log/
 checkpoints/
+
+#challenge_I
+challenge_I/data
