@@ -569,9 +569,9 @@ int main(int argc, char** argv)
 						icp.setInputSource(instances[i]);
 						pcl::PointCloud<PointType>::Ptr registered(new pcl::PointCloud<PointType>);
 						icp.align(*registered);
-						Eigen::Matrix4f transformationMatrix = icp.getFinalTransformation();
+						
 						registeredModelClusteredKeyPoints.push_back(registered);
-						finalTransformations.push_back(transformationMatrix);
+						finalTransformations.push_back(icp.getFinalTransformation());
 						cout << "cluster " << i << " ";
 						if (icp.hasConverged())
 						{
