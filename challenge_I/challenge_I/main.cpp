@@ -558,7 +558,7 @@ int main(int argc, char** argv)
 					cout << "f) Refine pose of each instance by using ICP" << endl;
 
 					std::vector<pcl::PointCloud<PointType>::ConstPtr> registeredModelClusteredKeyPoints;// (new pcl::PointCloud<PointType>());
-
+					vector<Eigen::Matrix4f> finalTransformations;
 					for (size_t i = 0; i < rototranslations.size(); ++i)
 					{
 						pcl::IterativeClosestPoint<PointType, PointType> icp;
@@ -569,7 +569,9 @@ int main(int argc, char** argv)
 						icp.setInputSource(instances[i]);
 						pcl::PointCloud<PointType>::Ptr registered(new pcl::PointCloud<PointType>);
 						icp.align(*registered);
+						Eigen::Matrix4f transformationMatrix = icp.getFinalTransformation();
 						registeredModelClusteredKeyPoints.push_back(registered);
+						finalTransformations.push_back(transformationMatrix);
 						cout << "cluster " << i << " ";
 						if (icp.hasConverged())
 						{
@@ -661,14 +663,14 @@ int main(int argc, char** argv)
 					GoHv.setRadiusClutter(0.03);
 					GoHv.setClutterRegularizer(5);
 					GoHv.setDetectClutter(true);
-
+					
 
 					GoHv.setRadiusNormals(0.05f);
 					GoHv.verify();
 					std::vector<bool> mask_hv;
 
 					GoHv.getMask(mask_hv);
-
+					
 
 
 
