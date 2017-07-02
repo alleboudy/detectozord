@@ -110,9 +110,9 @@ int main(int argc, char** argv)
 
 			// Create point clouds from depth image and color image using camera intrinsic parameters
 			// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
-			for (int j = 0; j < depthImg.cols; j+=5)
+			for (int j = 0; j < depthImg.cols; j+=6)
 			{
-				for (int i = 0; i < depthImg.rows; i+=5)
+				for (int i = 0; i < depthImg.rows; i+=6)
 				{
 					auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
 					
@@ -161,7 +161,7 @@ int main(int argc, char** argv)
 			cout <<challengeName<< " cloud size " << sceneCloud->size() << endl;
 			pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
 			pcl::PointCloud<pcl::Normal>::Ptr scene_normals(new pcl::PointCloud<pcl::Normal>);
-			ne.setKSearch(10);
+			ne.setKSearch(100);
 
 
 
@@ -344,9 +344,9 @@ int main(int argc, char** argv)
 
 					// Create point clouds from depth image and color image using camera intrinsic parameters
 					// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
-					for (int j = 0; j < depthImg.cols; j++)
+					for (int j = 0; j < depthImg.cols; j+=3)
 					{
-						for (int i = 0; i < depthImg.rows; i++)
+						for (int i = 0; i < depthImg.rows; i+=3)
 						{
 							auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
 
@@ -529,7 +529,7 @@ int main(int argc, char** argv)
 					//std::vector<pcl::Correspondences> clusters; //output
 					pcl::GeometricConsistencyGrouping<pcl::PointXYZRGBA, pcl::PointXYZRGBA> gc_clusterer;
 					gc_clusterer.setGCSize(0.1f); //1st param
-					gc_clusterer.setGCThreshold(5); //2nd param
+					gc_clusterer.setGCThreshold(5); //2nd param//minimum cluster size, shouldn't be less than 3
 					gc_clusterer.setInputCloud(modelSampledCloud);
 					gc_clusterer.setSceneCloud(sceneSampledCloud);
 					gc_clusterer.setModelSceneCorrespondences(model_scene_corrs);
@@ -655,7 +655,7 @@ int main(int argc, char** argv)
 					pcl::GlobalHypothesesVerification<PointType, PointType> GoHv;
 					GoHv.setSceneCloud(sceneCloud);
 					GoHv.addModels(registeredModelClusteredKeyPoints, true);
-					GoHv.setInlierThreshold(0.5f);
+					GoHv.setInlierThreshold(0.05f);
 					GoHv.setOcclusionThreshold(0.1);
 					GoHv.setRegularizer(3);
 					GoHv.setRadiusClutter(0.03);
