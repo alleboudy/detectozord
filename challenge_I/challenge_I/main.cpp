@@ -68,7 +68,7 @@ int main(int argc, char** argv)
 
 	//0-  loading all of the scene clouds and keeping them for testing.
 
-	std::unordered_map<std::string, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> Scenes;
+//	std::unordered_map<std::string, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> Scenes;
 
 
 	string challengesMainPath = projectSrcDir + "/data/challenge1_val/test/";
@@ -110,33 +110,67 @@ int main(int argc, char** argv)
 
 			// Create point clouds from depth image and color image using camera intrinsic parameters
 			// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
-			for (int j = 0; j < depthImg.cols; j+=10)
+			for (int j = 0; j < depthImg.cols; j+=5)
 			{
-				for (int i = 0; i < depthImg.rows; i+=10)
+				for (int i = 0; i < depthImg.rows; i+=5)
 				{
 					auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
-
+					
 					// (2) Translate 3D point in local coordinate system to 3D point in global coordinate system using camera pose.
 					//	point = poseMat *point;
 					// (3) Add the 3D point to vertices in point clouds data.
 					pcl::PointXYZRGBA p;
-					p.x = point[0];
-					p.y = point[1];
-					p.z = point[2];
+					p.x = point[0]/1000.0f;
+					p.y = point[1]/1000.0f;
+					p.z = point[2]/1000.0f;
 					p.r = colorImg.at<cv::Vec3b>(i, j)[0];
 					p.g = colorImg.at<cv::Vec3b>(i, j)[1];
 					p.b = colorImg.at<cv::Vec3b>(i, j)[2];
 					p.a = 255;
-
+					if (p.x == 0 && p.y == 0 && p.r == 0 && p.g == 0 && p.b == 0)
+					{
+						continue;
+					}
 					sceneCloud->push_back(p);
 				}
 			}
+
+		
+		/*	std::string scene_filename_ ="C:\\Users\\ahmad\\Documents\\PLARR2017\\plarr17\\exercise7\\data\\scene_clutter.pcd";
+
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+			if (pcl::io::loadPCDFile<pcl::PointXYZRGBA>(scene_filename_, *sceneCloud) == -1){ PCL_ERROR("Couldn't read file scene.pcd \n"); return (-1); }
+			std::cout << "Loaded" << sceneCloud->width * sceneCloud->height << "points" << std::endl;
+
+
+			for (size_t j = 0; j < sceneCloud->size(); j++)
+			{
+				sceneCloud->at(j).a = 255;
+
+			}*/
+
+			pcl::visualization::PCLVisualizer viewer3("3d scene");
+			viewer3.addPointCloud(sceneCloud, "scene");
+			viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
+			while (!viewer3.wasStopped())
+			{
+				viewer3.spinOnce(100);
+			}
+
 
 			cout <<challengeName<< " cloud size " << sceneCloud->size() << endl;
 			pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
 			pcl::PointCloud<pcl::Normal>::Ptr scene_normals(new pcl::PointCloud<pcl::Normal>);
 			ne.setKSearch(10);
+
+
+
 			cout << "Computing scene "<<challengeName<< " normals" << endl;
+			/*pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGBA>());
+			ne.setSearchMethod(tree);
+			ne.setRadiusSearch(100.0f);*/
+
+
 			ne.setInputCloud(sceneCloud);
 			ne.compute(*scene_normals);
 
@@ -310,9 +344,9 @@ int main(int argc, char** argv)
 
 					// Create point clouds from depth image and color image using camera intrinsic parameters
 					// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
-					for (int j = 0; j < depthImg.cols; j+=10)
+					for (int j = 0; j < depthImg.cols; j++)
 					{
-						for (int i = 0; i < depthImg.rows; i+=10)
+						for (int i = 0; i < depthImg.rows; i++)
 						{
 							auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
 
@@ -320,14 +354,17 @@ int main(int argc, char** argv)
 							point = poseMat *point;
 							// (3) Add the 3D point to vertices in point clouds data.
 							pcl::PointXYZRGBA p;
-							p.x = point[0];
-							p.y = point[1];
-							p.z = point[2];
+							p.x = point[0]/1000.0f;
+							p.y = point[1]/1000.0f;
+							p.z = point[2]/1000.0f;
 							p.r = colorImg.at<cv::Vec3b>(i, j)[0];
 							p.g = colorImg.at<cv::Vec3b>(i, j)[1];
 							p.b = colorImg.at<cv::Vec3b>(i, j)[2];
 							p.a = 255;
-
+							if (p.x == 0 && p.y == 0 &&p.r==0&&p.g==0&&p.b==0)
+							{
+								continue;
+							}
 							modelCloud->push_back(p);
 						}
 					}
@@ -336,8 +373,19 @@ int main(int argc, char** argv)
 					cout << "SCENE: " << challengeName << "  - MODEL: " << modelName << modelIndex << endl;
 					//std::cout << " " << it.first << ":" << it.second;
 
+					pcl::visualization::PCLVisualizer viewer2("3d viewer");
+					viewer2.addPointCloud(modelCloud, "model");
+					viewer2.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "model");
+					while (!viewer2.wasStopped())
+					{
+						viewer2.spinOnce(100);
+					}
+
+					
+					
 
 
+					
 
 					//// a) Load Point clouds (model and scene)
 					/*cout << "a) Load Point clouds (model and scene)" << endl;
@@ -480,7 +528,7 @@ int main(int argc, char** argv)
 					cout << "e) Cluster geometrical correspondence, and finding object instances" << endl;
 					//std::vector<pcl::Correspondences> clusters; //output
 					pcl::GeometricConsistencyGrouping<pcl::PointXYZRGBA, pcl::PointXYZRGBA> gc_clusterer;
-					gc_clusterer.setGCSize(0.01f); //1st param
+					gc_clusterer.setGCSize(0.1f); //1st param
 					gc_clusterer.setGCThreshold(5); //2nd param
 					gc_clusterer.setInputCloud(modelSampledCloud);
 					gc_clusterer.setSceneCloud(sceneSampledCloud);
