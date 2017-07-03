@@ -39,7 +39,7 @@
 typedef pcl::PointXYZRGBA PointType;
 typedef pcl::Normal NormalType;
 typedef pcl::ReferenceFrame RFType;
-typedef pcl::SHOT352 DescriptorType;
+typedef pcl::SHOT1344 DescriptorType;
 
 using namespace std;
 using namespace pcl;
@@ -127,7 +127,7 @@ int main(int argc, char** argv)
 					p.g = colorImg.at<cv::Vec3b>(i, j)[1];
 					p.b = colorImg.at<cv::Vec3b>(i, j)[2];
 					p.a = 255;
-					if (p.x == 0 && p.y == 0 && p.r == 0 && p.g == 0 && p.b == 0)
+					if ( p.r == 0 && p.g == 0 && p.b == 0)
 					{
 						continue;
 					}
@@ -152,6 +152,8 @@ int main(int argc, char** argv)
 			pcl::visualization::PCLVisualizer viewer3("3d scene");
 			viewer3.addPointCloud(sceneCloud, "scene");
 			viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
+			viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene" );
+
 			while (!viewer3.wasStopped())
 			{
 				viewer3.spinOnce(100);
@@ -186,9 +188,9 @@ int main(int argc, char** argv)
 
 			cout << "Creating scene " << challengeName << " Descriptors" << endl;
 
-			pcl::SHOTEstimationOMP<pcl::PointXYZRGBA, pcl::Normal, pcl::SHOT352> describer;
+			pcl::SHOTColorEstimationOMP<pcl::PointXYZRGBA, pcl::Normal, pcl::SHOT1344> describer;
 			describer.setRadiusSearch(0.02f);
-			pcl::PointCloud<pcl::SHOT352>::Ptr sceneDescriptors(new pcl::PointCloud<pcl::SHOT352>);
+			pcl::PointCloud<pcl::SHOT1344>::Ptr sceneDescriptors(new pcl::PointCloud<pcl::SHOT1344>);
 			//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneSampledCloudPtr(&sceneSampledCloud);
 
 			describer.setInputCloud(sceneSampledCloud);
@@ -344,9 +346,9 @@ int main(int argc, char** argv)
 
 					// Create point clouds from depth image and color image using camera intrinsic parameters
 					// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
-					for (int j = 0; j < depthImg.cols; j+=3)
+					for (int j = 0; j < depthImg.cols; j+=6)
 					{
-						for (int i = 0; i < depthImg.rows; i+=3)
+						for (int i = 0; i < depthImg.rows; i+=6)
 						{
 							auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
 
@@ -459,7 +461,7 @@ int main(int argc, char** argv)
 					cout << "c) Compute descriptor for keypoints" << endl;
 				
 
-					pcl::PointCloud<pcl::SHOT352>::Ptr modelDescriptors(new pcl::PointCloud<pcl::SHOT352>);
+					pcl::PointCloud<pcl::SHOT1344>::Ptr modelDescriptors(new pcl::PointCloud<pcl::SHOT1344>);
 					//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelSampledCloudPtr(&modelSampledCloud);
 
 					describer.setInputCloud(modelSampledCloud);
@@ -528,8 +530,8 @@ int main(int argc, char** argv)
 					cout << "e) Cluster geometrical correspondence, and finding object instances" << endl;
 					//std::vector<pcl::Correspondences> clusters; //output
 					pcl::GeometricConsistencyGrouping<pcl::PointXYZRGBA, pcl::PointXYZRGBA> gc_clusterer;
-					gc_clusterer.setGCSize(0.1f); //1st param
-					gc_clusterer.setGCThreshold(5); //2nd param//minimum cluster size, shouldn't be less than 3
+					gc_clusterer.setGCSize(0.05f); //1st param
+					gc_clusterer.setGCThreshold(10); //2nd param//minimum cluster size, shouldn't be less than 3
 					gc_clusterer.setInputCloud(modelSampledCloud);
 					gc_clusterer.setSceneCloud(sceneSampledCloud);
 					gc_clusterer.setModelSceneCorrespondences(model_scene_corrs);
@@ -563,7 +565,7 @@ int main(int argc, char** argv)
 					{
 						pcl::IterativeClosestPoint<PointType, PointType> icp;
 						icp.setMaximumIterations(5);
-						icp.setMaxCorrespondenceDistance(0.1);
+						icp.setMaxCorrespondenceDistance(0.001);
 						icp.setUseReciprocalCorrespondences(true);
 						icp.setInputTarget(sceneCloud);
 						icp.setInputSource(instances[i]);
@@ -658,7 +660,7 @@ int main(int argc, char** argv)
 					GoHv.setSceneCloud(sceneCloud);
 					GoHv.addModels(registeredModelClusteredKeyPoints, true);
 					GoHv.setInlierThreshold(0.05f);
-					GoHv.setOcclusionThreshold(0.1);
+					GoHv.setOcclusionThreshold(0.01);
 					GoHv.setRegularizer(3);
 					GoHv.setRadiusClutter(0.03);
 					GoHv.setClutterRegularizer(5);
@@ -706,6 +708,7 @@ int main(int argc, char** argv)
 
 							cout << "instance" + to_string(i) + " good" << endl;
 							viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "instance" + to_string(i));
+							viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance" + to_string(i));
 
 						}
 						else
@@ -715,7 +718,6 @@ int main(int argc, char** argv)
 							//	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "instance" + to_string(i));
 
 						}
-						viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance" + to_string(i));
 
 					}
 
