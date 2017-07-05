@@ -22,7 +22,11 @@
 #include <pcl/keypoints/iss_3d.h>
 #include <pcl/recognition/hv/greedy_verification.h>
 #include <pcl/io/ply_io.h>
-
+#include <pcl/ModelCoefficients.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/filters/extract_indices.h>
 // including boost headers
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
@@ -149,10 +153,41 @@ int main(int argc, char** argv)
 
 				}*/
 
+			pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+			pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+			// Create the segmentation object
+			pcl::SACSegmentation<pcl::PointXYZRGBA> seg;
+			// Optional
+			seg.setOptimizeCoefficients(true);
+			// Mandatory
+			seg.setModelType(pcl::SACMODEL_PLANE);
+			seg.setMethodType(pcl::SAC_RANSAC);
+			seg.setDistanceThreshold(0.01);
+			seg.setInputCloud(sceneCloud);
+			seg.segment(*inliers, *coefficients);
+
+			pcl::ExtractIndices<PointType> eifilter(true); // Initializing with true will allow us to extract the removed indices
+			eifilter.setInputCloud(sceneCloud);
+			eifilter.setIndices(inliers);
+			eifilter.setNegative(true);
+			eifilter.filterDirectly(sceneCloud);
+			
+			//seg.setModelType(pcl::SACMODEL_PARALLEL_PLANE);
+			//seg.setDistanceThreshold(0.01);
+			//seg.setInputCloud(sceneCloud);
+			//seg.segment(*inliers, *coefficients);
+
+			////pcl::ExtractIndices<PointType> eifilter(true); // Initializing with true will allow us to extract the removed indices
+			//eifilter.setInputCloud(sceneCloud);
+			//eifilter.setIndices(inliers);
+			//eifilter.setNegative(true);
+			//eifilter.filterDirectly(sceneCloud);
+		//	copyPointCloud(*sceneCloud, inliers->indices, *sceneCloud);
+			
 			pcl::visualization::PCLVisualizer viewer3("3d scene");
 			viewer3.addPointCloud(sceneCloud, "scene");
 			viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
-			viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene");
+		//	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene");
 
 			while (!viewer3.wasStopped())
 			{
