@@ -110,13 +110,15 @@ int main(int argc, char** argv)
 			float py = 240; // principal point y
 
 			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr originalSceneCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+
 
 
 			// Create point clouds from depth image and color image using camera intrinsic parameters
 			// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
-			for (int j = 0; j < depthImg.cols; j += 2)
+			for (int j = 0; j < depthImg.cols; j += 1)
 			{
-				for (int i = 0; i < depthImg.rows; i += 2)
+				for (int i = 0; i < depthImg.rows; i += 1)
 				{
 					auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
 
@@ -153,6 +155,7 @@ int main(int argc, char** argv)
 
 				}*/
 
+			copyPointCloud(*sceneCloud, *originalSceneCloud);
 			pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
 			pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
 			// Create the segmentation object
@@ -601,7 +604,7 @@ int main(int argc, char** argv)
 				//std::vector<pcl::Correspondences> clusters; //output
 				pcl::GeometricConsistencyGrouping<pcl::PointXYZRGBA, pcl::PointXYZRGBA> gc_clusterer;
 				gc_clusterer.setGCSize(0.005f); //1st param
-				gc_clusterer.setGCThreshold(10); //2nd param//minimum cluster size, shouldn't be less than 3
+				gc_clusterer.setGCThreshold(20); //2nd param//minimum cluster size, shouldn't be less than 3
 				gc_clusterer.setInputCloud(modelSampledCloud);
 				gc_clusterer.setSceneCloud(sceneSampledCloud);
 				gc_clusterer.setModelSceneCorrespondences(model_scene_corrs);
@@ -634,7 +637,7 @@ int main(int argc, char** argv)
 				for (size_t i = 0; i < rototranslations.size(); ++i)
 				{
 					pcl::IterativeClosestPoint<PointType, PointType> icp;
-					icp.setMaximumIterations(5);
+					icp.setMaximumIterations(50);
 					icp.setMaxCorrespondenceDistance(0.05);
 					//icp.setUseReciprocalCorrespondences(true);
 					icp.setInputTarget(sceneCloud);
@@ -762,7 +765,7 @@ int main(int argc, char** argv)
 
 				cout << "Visualize detection result" << endl;
 				pcl::visualization::PCLVisualizer viewer("3d viewer");
-				viewer.addPointCloud(sceneCloud, "scene");
+				viewer.addPointCloud(originalSceneCloud, "scene");
 				viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
 
 				//viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 1, 1, "scene");
@@ -778,16 +781,16 @@ int main(int argc, char** argv)
 
 						cout << "instance" + to_string(i) + " good" << endl;
 						viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "instance" + to_string(i));
+						viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance" + to_string(i));
 
 					}
 					else
 					{
 						cout << "instance" + to_string(i) + " bad" << endl;
 
-				//			viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "instance" + to_string(i));
+						//	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "instance" + to_string(i));
 
 					}
-					viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance" + to_string(i));
 
 				}
 
