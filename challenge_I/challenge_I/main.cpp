@@ -43,7 +43,7 @@
 typedef pcl::PointXYZRGBA PointType;
 typedef pcl::Normal NormalType;
 typedef pcl::ReferenceFrame RFType;
-typedef pcl::SHOT1344 DescriptorType;
+typedef pcl::SHOT352 DescriptorType;
 
 using namespace std;
 using namespace pcl;
@@ -198,7 +198,7 @@ int main(int argc, char** argv)
 			cout << challengeName << " cloud size " << sceneCloud->size() << endl;
 			pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
 			pcl::PointCloud<pcl::Normal>::Ptr scene_normals(new pcl::PointCloud<pcl::Normal>);
-			ne.setKSearch(100);
+			ne.setKSearch(10);
 
 
 
@@ -223,9 +223,9 @@ int main(int argc, char** argv)
 
 			cout << "Creating scene " << challengeName << " Descriptors" << endl;
 
-			pcl::SHOTColorEstimationOMP<pcl::PointXYZRGBA, pcl::Normal, pcl::SHOT1344> describer;
+			pcl::SHOTEstimationOMP<pcl::PointXYZRGBA, pcl::Normal, pcl::SHOT352> describer;
 			describer.setRadiusSearch(0.02f);
-			pcl::PointCloud<pcl::SHOT1344>::Ptr sceneDescriptors(new pcl::PointCloud<pcl::SHOT1344>);
+			pcl::PointCloud<pcl::SHOT352>::Ptr sceneDescriptors(new pcl::PointCloud<pcl::SHOT352>);
 			//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneSampledCloudPtr(&sceneSampledCloud);
 
 			describer.setInputCloud(sceneSampledCloud);
@@ -531,7 +531,7 @@ int main(int argc, char** argv)
 				cout << "c) Compute descriptor for keypoints" << endl;
 
 
-				pcl::PointCloud<pcl::SHOT1344>::Ptr modelDescriptors(new pcl::PointCloud<pcl::SHOT1344>);
+				pcl::PointCloud<pcl::SHOT352>::Ptr modelDescriptors(new pcl::PointCloud<pcl::SHOT352>);
 				//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelSampledCloudPtr(&modelSampledCloud);
 
 				describer.setInputCloud(modelSampledCloud);
@@ -600,7 +600,7 @@ int main(int argc, char** argv)
 				cout << "e) Cluster geometrical correspondence, and finding object instances" << endl;
 				//std::vector<pcl::Correspondences> clusters; //output
 				pcl::GeometricConsistencyGrouping<pcl::PointXYZRGBA, pcl::PointXYZRGBA> gc_clusterer;
-				gc_clusterer.setGCSize(0.05f); //1st param
+				gc_clusterer.setGCSize(0.005f); //1st param
 				gc_clusterer.setGCThreshold(10); //2nd param//minimum cluster size, shouldn't be less than 3
 				gc_clusterer.setInputCloud(modelSampledCloud);
 				gc_clusterer.setSceneCloud(sceneSampledCloud);
@@ -636,7 +636,7 @@ int main(int argc, char** argv)
 					pcl::IterativeClosestPoint<PointType, PointType> icp;
 					icp.setMaximumIterations(5);
 					icp.setMaxCorrespondenceDistance(0.05);
-					icp.setUseReciprocalCorrespondences(true);
+					//icp.setUseReciprocalCorrespondences(true);
 					icp.setInputTarget(sceneCloud);
 					icp.setInputSource(instances[i]);
 					pcl::PointCloud<PointType>::Ptr registered(new pcl::PointCloud<PointType>);
