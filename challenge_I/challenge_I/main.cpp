@@ -2,14 +2,6 @@
 #include <string>
 #include <unordered_map>
 
-// writing into a file
-#include <ostream>
-#include <vector>
-#include <algorithm>
-#include <iterator>
-#include <iostream>
-
-
 // including pcl headers
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_cloud.h>
@@ -35,25 +27,25 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/extract_indices.h>
-
 // including boost headers
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include <boost/iostreams/device/file.hpp>
-#include <boost/iostreams/stream.hpp>
-
 // including opencv2 headers
 #include <opencv2/imgproc.hpp>
 #include "opencv2/opencv.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
-// measure the runtime
-#include <time.h>
-
-
+// writing into a file
+#include <ostream>
+#include <vector>
+#include <algorithm>
+#include <iterator>
+#include <iostream>
+#include <boost/iostreams/device/file.hpp>
+#include <boost/iostreams/stream.hpp>
 
 typedef pcl::PointXYZRGBA PointType;
 typedef pcl::Normal NormalType;
@@ -64,6 +56,9 @@ using namespace std;
 using namespace pcl;
 using namespace boost::filesystem;
 //using namespace cv;
+
+
+
 
 //-- iterating over files
 
@@ -78,7 +73,6 @@ struct recursive_directory_range
 	path p_;
 };
 
-
 int main(int argc, char** argv)
 {
 	std::string projectSrcDir = PROJECT_SOURCE_DIR;
@@ -88,20 +82,29 @@ int main(int argc, char** argv)
 	//	std::unordered_map<std::string, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> Scenes;
 
 
+
+	//pipeline parameters
+
+	float SegMentationDistanceThreshold = 0.01;
+	float sceneUniformSamplingRadius = 0.002f;
+	float scenedescriberRadiusSearch = 0.02f;
+	float modelSamplingRadiusSearch = 0.008f;
+	float gcClusteringSize = 0.005f;
+	float gcClusteringThreshold = 20;
+	int icpsetMaximumIterations = 50;
+	float icpsetMaxCorrespondenceDistance = 0.05;
+	float GoHvsetInlierThreshold = 0.05f;
+	float GoHvsetOcclusionThreshold = 0.01;
+	int GoHvRegularizer = 3;
+	float GoHvsetRadiusClutter = 0.03;
+	int GoHvClutterRegularizer = 5;
+	float GoHvRadiusNormals = 0.05f;
+
 	string challengesMainPath = projectSrcDir + "/data/challenge1_val/test/";
 	string challengePath = "";
 	string challengeName = "";
 	string sceneRGBDir = "";
 	string sceneDepthDir = "";
-
-	// create directory for output files
-	string teamname = "TeamZero";
-	const char* directorypath = projectSrcDir.c_str();
-	boost::filesystem::path dir(directorypath);
-	if (boost::filesystem::create_directory(dir))
-	{
-		std::cerr << "Directory Created: " << directorypath << std::endl;
-	}
 
 	for (size_t i = 1; i < 6; i++)//we have 5 scenes from 1 to 5, perhaps loading this dynamically might be better
 	{
@@ -109,15 +112,22 @@ int main(int argc, char** argv)
 		challengePath = challengesMainPath + challengeName;
 		sceneRGBDir = challengePath + "/rgb/";
 		sceneDepthDir = challengePath + "/depth/";
-		// iterate over the two scenes in rgb folder
+		// create directory for output files
+		string teamname = "TeamZero";
+		const char* directorypath = projectSrcDir.c_str();
+		boost::filesystem::path dir(directorypath);
+		if (boost::filesystem::create_directory(dir))
+		{
+			std::cerr << "Directory Created: " << directorypath << std::endl;
+		}
+
 		for (auto it : recursive_directory_range(sceneRGBDir))
 		{
+
 			string path = it.path().string();
 			boost::replace_all(path, "\\", "/");
 			string colorSceneFilepath = path;
 			string colorSceneFilename = colorSceneFilepath.substr(colorSceneFilepath.find_last_of("/") + 1);
-
-
 
 			//cout << path << endl;
 			boost::replace_all(path, "rgb", "depth");
@@ -190,7 +200,7 @@ int main(int argc, char** argv)
 			// Mandatory
 			seg.setModelType(pcl::SACMODEL_PLANE);
 			seg.setMethodType(pcl::SAC_RANSAC);
-			seg.setDistanceThreshold(0.01);
+			seg.setDistanceThreshold(SegMentationDistanceThreshold);
 			seg.setInputCloud(sceneCloud);
 			seg.segment(*inliers, *coefficients);
 
@@ -243,7 +253,7 @@ int main(int argc, char** argv)
 			cout << "Computing scene " << challengeName << " keypoints" << endl;
 
 			pcl::UniformSampling<pcl::PointXYZRGBA> uniform_sampling;
-			uniform_sampling.setRadiusSearch(0.002f); //the 3D grid leaf size
+			uniform_sampling.setRadiusSearch(sceneUniformSamplingRadius); //the 3D grid leaf size
 			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneSampledCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 			uniform_sampling.setInputCloud(sceneCloud);
 			uniform_sampling.filter(*sceneSampledCloud);
@@ -252,7 +262,7 @@ int main(int argc, char** argv)
 			cout << "Creating scene " << challengeName << " Descriptors" << endl;
 
 			pcl::SHOTEstimationOMP<pcl::PointXYZRGBA, pcl::Normal, pcl::SHOT352> describer;
-			describer.setRadiusSearch(0.02f);
+			describer.setRadiusSearch(scenedescriberRadiusSearch);
 			pcl::PointCloud<pcl::SHOT352>::Ptr sceneDescriptors(new pcl::PointCloud<pcl::SHOT352>);
 			//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneSampledCloudPtr(&sceneSampledCloud);
 
@@ -283,6 +293,7 @@ int main(int argc, char** argv)
 			for (auto it : recursive_directory_range(projectSrcDir + "/data/challenge_train/models/"))
 			{
 				clock_t tStart = clock();
+
 				index++;
 				string path = it.path().string();
 				boost::replace_all(path, "\\", "/");
@@ -546,7 +557,7 @@ int main(int argc, char** argv)
 
 
 
-				uniform_sampling.setRadiusSearch(0.008f); //the 3D grid leaf size
+				uniform_sampling.setRadiusSearch(modelSamplingRadiusSearch ); //the 3D grid leaf size
 
 				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelSampledCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 				uniform_sampling.setInputCloud(modelCloud);
@@ -629,8 +640,8 @@ int main(int argc, char** argv)
 				cout << "e) Cluster geometrical correspondence, and finding object instances" << endl;
 				//std::vector<pcl::Correspondences> clusters; //output
 				pcl::GeometricConsistencyGrouping<pcl::PointXYZRGBA, pcl::PointXYZRGBA> gc_clusterer;
-				gc_clusterer.setGCSize(0.005f); //1st param
-				gc_clusterer.setGCThreshold(20); //2nd param//minimum cluster size, shouldn't be less than 3
+				gc_clusterer.setGCSize(gcClusteringSize); //1st param
+				gc_clusterer.setGCThreshold(gcClusteringThreshold); //2nd param//minimum cluster size, shouldn't be less than 3
 				gc_clusterer.setInputCloud(modelSampledCloud);
 				gc_clusterer.setSceneCloud(sceneSampledCloud);
 				gc_clusterer.setModelSceneCorrespondences(model_scene_corrs);
@@ -663,8 +674,8 @@ int main(int argc, char** argv)
 				for (size_t i = 0; i < rototranslations.size(); ++i)
 				{
 					pcl::IterativeClosestPoint<PointType, PointType> icp;
-					icp.setMaximumIterations(50);
-					icp.setMaxCorrespondenceDistance(0.05);
+					icp.setMaximumIterations(icpsetMaximumIterations);
+					icp.setMaxCorrespondenceDistance(icpsetMaxCorrespondenceDistance);
 					//icp.setUseReciprocalCorrespondences(true);
 					icp.setInputTarget(sceneCloud);
 					icp.setInputSource(instances[i]);
@@ -758,15 +769,15 @@ int main(int argc, char** argv)
 				pcl::GlobalHypothesesVerification<PointType, PointType> GoHv;
 				GoHv.setSceneCloud(sceneCloud);
 				GoHv.addModels(registeredModelClusteredKeyPoints, true);
-				GoHv.setInlierThreshold(0.05f);
-				GoHv.setOcclusionThreshold(0.01);
-				GoHv.setRegularizer(3);
-				GoHv.setRadiusClutter(0.03);
-				GoHv.setClutterRegularizer(5);
+				GoHv.setInlierThreshold(GoHvsetInlierThreshold);
+				GoHv.setOcclusionThreshold(GoHvsetOcclusionThreshold);
+				GoHv.setRegularizer(GoHvRegularizer);
+				GoHv.setRadiusClutter(GoHvsetRadiusClutter);
+				GoHv.setClutterRegularizer(GoHvClutterRegularizer);
 				GoHv.setDetectClutter(true);
 
 
-				GoHv.setRadiusNormals(0.05f);
+				GoHv.setRadiusNormals(GoHvRadiusNormals);
 				GoHv.verify();
 				std::vector<bool> mask_hv;
 
@@ -797,6 +808,7 @@ int main(int argc, char** argv)
 				//viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 1, 1, "scene");
 
 				double timeTaken = (double)(((double)(clock() - tStart)) / CLOCKS_PER_SEC);
+
 				// run algorithm on all scenes in the test folder and produce output files
 				// using the following format:  
 				// https://github.com/thodan/sixd_toolkit/blob/master/doc/sixd_2017_results_format.md
@@ -804,6 +816,8 @@ int main(int argc, char** argv)
 				// XXXX: test image
 				// YY: object that is present in the image (e.g. bird)
 				// 6D pose is written to output file
+
+
 				for (size_t i = 0; i < registeredModelClusteredKeyPoints.size(); i++)
 				{
 
@@ -814,7 +828,7 @@ int main(int argc, char** argv)
 						// TODO: find out how to compute score
 						double score = 0;
 
-						string rotationValues = to_string(finalTransformations[i](0, 1)) 
+						string rotationValues = to_string(finalTransformations[i](0, 1))
 							+ to_string(finalTransformations[i](0, 2))
 							+ to_string(finalTransformations[i](1, 0))
 							+ to_string(finalTransformations[i](1, 1))
@@ -824,10 +838,10 @@ int main(int argc, char** argv)
 							+ to_string(finalTransformations[i](2, 2));
 
 						string translationValues = to_string(finalTransformations[i](0, 3))
-							+to_string(finalTransformations[i](1, 3))
-							+to_string(finalTransformations[i](2, 3));
+							+ to_string(finalTransformations[i](1, 3))
+							+ to_string(finalTransformations[i](2, 3));
 
-						string outputFileName = colorSceneFilename+"_" + modelName + ".yml";
+						string outputFileName = colorSceneFilename + "_" + modelName + ".yml";
 
 
 						boost::iostreams::stream_buffer<boost::iostreams::file_sink> buf(outputFileName);
@@ -835,12 +849,11 @@ int main(int argc, char** argv)
 						// out writes to file XXXX_YY.txt
 						osout << "run_time: " + to_string(timeTaken) + "\r\n";
 						osout << "ests:\r\n";
-						osout << "- {score: " + to_string(score) + ", R : ["+rotationValues+"], t: ["+translationValues+"]}";
-						
-
+						osout << "- {score: " + to_string(score) + ", R : [" + rotationValues + "], t: [" + translationValues + "]}";
 						cout << "instance" + to_string(i) + " good" << endl;
 						viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "instance" + to_string(i));
 						viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance" + to_string(i));
+
 					}
 					else
 					{
