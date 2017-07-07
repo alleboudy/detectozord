@@ -2,6 +2,14 @@
 #include <string>
 #include <unordered_map>
 
+// writing into a file
+#include <ostream>
+#include <vector>
+#include <algorithm>
+#include <iterator>
+#include <iostream>
+
+
 // including pcl headers
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_cloud.h>
@@ -27,16 +35,23 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/extract_indices.h>
+
 // including boost headers
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <boost/iostreams/device/file.hpp>
+#include <boost/iostreams/stream.hpp>
+
 // including opencv2 headers
 #include <opencv2/imgproc.hpp>
 #include "opencv2/opencv.hpp"
 #include "opencv2/highgui/highgui.hpp"
+
+// measure the runtime
+#include <time.h>
 
 
 
@@ -50,9 +65,6 @@ using namespace pcl;
 using namespace boost::filesystem;
 //using namespace cv;
 
-
-
-
 //-- iterating over files
 
 struct recursive_directory_range
@@ -65,6 +77,7 @@ struct recursive_directory_range
 
 	path p_;
 };
+
 
 int main(int argc, char** argv)
 {
@@ -81,26 +94,38 @@ int main(int argc, char** argv)
 	string sceneRGBDir = "";
 	string sceneDepthDir = "";
 
+	// create directory for output files
+	string teamname = "TeamZero";
+	const char* directorypath = projectSrcDir.c_str();
+	boost::filesystem::path dir(directorypath);
+	if (boost::filesystem::create_directory(dir))
+	{
+		std::cerr << "Directory Created: " << directorypath << std::endl;
+	}
+
 	for (size_t i = 1; i < 6; i++)//we have 5 scenes from 1 to 5, perhaps loading this dynamically might be better
 	{
 		challengeName = "challenge1_" + to_string(i);
 		challengePath = challengesMainPath + challengeName;
 		sceneRGBDir = challengePath + "/rgb/";
 		sceneDepthDir = challengePath + "/depth/";
+		// iterate over the two scenes in rgb folder
 		for (auto it : recursive_directory_range(sceneRGBDir))
 		{
-
 			string path = it.path().string();
 			boost::replace_all(path, "\\", "/");
-			string colorFilename = path;
+			string colorSceneFilepath = path;
+			string colorSceneFilename = colorSceneFilepath.substr(colorSceneFilepath.find_last_of("/") + 1);
+
+
 
 			//cout << path << endl;
 			boost::replace_all(path, "rgb", "depth");
-			string depthFilename = path;
+			string depthSceneFilepath = path;
 			//cout << path << endl;
 
-			cv::Mat depthImg = cv::imread(depthFilename, CV_LOAD_IMAGE_UNCHANGED);
-			cv::Mat colorImg = cv::imread(colorFilename, CV_LOAD_IMAGE_COLOR);
+			cv::Mat depthImg = cv::imread(depthSceneFilepath, CV_LOAD_IMAGE_UNCHANGED);
+			cv::Mat colorImg = cv::imread(colorSceneFilepath, CV_LOAD_IMAGE_COLOR);
 			cv::cvtColor(colorImg, colorImg, CV_BGR2RGB); //this will put colors right
 			//[570.342, 0, 320, 0, 570.342, 240, 0, 0, 1]
 
@@ -257,6 +282,7 @@ int main(int argc, char** argv)
 			int index = -1;
 			for (auto it : recursive_directory_range(projectSrcDir + "/data/challenge_train/models/"))
 			{
+				clock_t tStart = clock();
 				index++;
 				string path = it.path().string();
 				boost::replace_all(path, "\\", "/");
@@ -770,19 +796,51 @@ int main(int argc, char** argv)
 
 				//viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 1, 1, "scene");
 
-
-
+				double timeTaken = (double)(((double)(clock() - tStart)) / CLOCKS_PER_SEC);
+				// run algorithm on all scenes in the test folder and produce output files
+				// using the following format:  
+				// https://github.com/thodan/sixd_toolkit/blob/master/doc/sixd_2017_results_format.md
+				// XXXX_YY.yml
+				// XXXX: test image
+				// YY: object that is present in the image (e.g. bird)
+				// 6D pose is written to output file
 				for (size_t i = 0; i < registeredModelClusteredKeyPoints.size(); i++)
 				{
 
 					if (mask_hv[i])
 					{
 						viewer.addPointCloud(registeredModelClusteredKeyPoints[i], "instance" + to_string(i));
+						// output transformation matrix 
+						// TODO: find out how to compute score
+						double score = 0;
+
+						string rotationValues = to_string(finalTransformations[i](0, 1)) 
+							+ to_string(finalTransformations[i](0, 2))
+							+ to_string(finalTransformations[i](1, 0))
+							+ to_string(finalTransformations[i](1, 1))
+							+ to_string(finalTransformations[i](1, 2))
+							+ to_string(finalTransformations[i](2, 0))
+							+ to_string(finalTransformations[i](2, 1))
+							+ to_string(finalTransformations[i](2, 2));
+
+						string translationValues = to_string(finalTransformations[i](0, 3))
+							+to_string(finalTransformations[i](1, 3))
+							+to_string(finalTransformations[i](2, 3));
+
+						string outputFileName = colorSceneFilename+"_" + modelName + ".yml";
+
+
+						boost::iostreams::stream_buffer<boost::iostreams::file_sink> buf(outputFileName);
+						std::ostream osout(&buf);
+						// out writes to file XXXX_YY.txt
+						osout << "run_time: " + to_string(timeTaken) + "\r\n";
+						osout << "ests:\r\n";
+						osout << "- {score: " + to_string(score) + ", R : ["+rotationValues+"], t: ["+translationValues+"]}";
+						
 
 						cout << "instance" + to_string(i) + " good" << endl;
 						viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "instance" + to_string(i));
 						viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance" + to_string(i));
-
 					}
 					else
 					{
