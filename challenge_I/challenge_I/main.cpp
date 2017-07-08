@@ -107,7 +107,7 @@ int main(int argc, char** argv)
 
 
 
-
+	// house parameters
 	float SegMentationDistanceThreshold = 0.1;
 	float sceneUniformSamplingRadius = 0.002f;
 	float scenedescriberRadiusSearch = 0.02f;
@@ -139,13 +139,20 @@ int main(int argc, char** argv)
 		challengePath = pathIT;
 		sceneRGBDir = challengePath + "/rgb/";
 		sceneDepthDir = challengePath + "/depth/";
-		// create directory for output files
-		string teamname = "TeamZero";
-		const char* directorypath = projectSrcDir.c_str();
-		boost::filesystem::path dir(directorypath);
+		// create directory for team name if not yet exist
+		string teamname = "/TeamZero";
+		const char* directorypathTeamName = projectSrcDir.c_str();
+		boost::filesystem::path dir(directorypathTeamName+teamname);
 		if (boost::filesystem::create_directory(dir))
 		{
-			std::cerr << "Directory Created: " << directorypath << std::endl;
+			std::cerr << "Teamname directory created: " << dir << std::endl;
+		}
+		// create a directory for each challenge (e.g. challenge1_1) if not yet exist
+		const char* directorypathChallenges = projectSrcDir.c_str();
+		boost::filesystem::path dir(directorypathChallenges + challengeName);
+		if (boost::filesystem::create_directory(dir))
+		{
+			std::cerr << "Challenge directory created: " << dir << std::endl;
 		}
 
 		for (auto it : recursive_directory_range(sceneRGBDir))
