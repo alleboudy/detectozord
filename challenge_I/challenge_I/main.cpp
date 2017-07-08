@@ -107,9 +107,9 @@ int main(int argc, char** argv)
 
 
 
-
-	float SegMentationDistanceThreshold = 0.01;//eating up the floor (more will eat up lots of points, less is undertuned)
-	float sceneUniformSamplingRadius = 0.002f;//for the keypoints of the scene(more will allow more points, less will remove less points)
+	// house
+	float SegMentationDistanceThreshold = 0.01;//eating up the floor 
+	float sceneUniformSamplingRadius = 0.002f;//for the keypoints of the scene
 	float scenedescriberRadiusSearch = 0.02f;//for the describer of the scene and the model
 	float modelSamplingRadiusSearch = 0.008f;//keypoints of the model
 	float gcClusteringSize = 0.005f;//clustering size
@@ -258,24 +258,14 @@ int main(int argc, char** argv)
 			//eifilter.filterDirectly(sceneCloud);
 		//	copyPointCloud(*sceneCloud, inliers->indices, *sceneCloud);
 			
-			pcl::visualization::PCLVisualizer viewer3("3d scene after segmentation");
+			pcl::visualization::PCLVisualizer viewer3("3d scene");
 			viewer3.addPointCloud(sceneCloud, "scene");
 			viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
 		//	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene");
 
-
-			pcl::visualization::PCLVisualizer viewer4("3d scene original cloud");
-			viewer4.addPointCloud(originalSceneCloud, "scene");
-			viewer4.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
-			//	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene");
-
-
-
-			while (!viewer3.wasStopped() && !viewer4.wasStopped())
+			while (!viewer3.wasStopped())
 			{
 				viewer3.spinOnce(100);
-				viewer4.spinOnce(100);
-
 			}
 
 
