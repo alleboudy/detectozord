@@ -61,7 +61,7 @@ using namespace boost::filesystem;
 
 
 //-- iterating over files
-
+/*
 struct recursive_directory_range
 {
 	typedef recursive_directory_iterator iterator;
@@ -72,7 +72,7 @@ struct recursive_directory_range
 
 	path p_;
 };
-
+*/
 int main(int argc, char** argv)
 {
 	std::string projectSrcDir = PROJECT_SOURCE_DIR;
@@ -108,15 +108,15 @@ int main(int argc, char** argv)
 
 
 
-	float SegMentationDistanceThreshold = 0.1;
-	float sceneUniformSamplingRadius = 0.002f;
-	float scenedescriberRadiusSearch = 0.02f;
-	float modelSamplingRadiusSearch = 0.008f;
-	float gcClusteringSize = 0.005f;
-	float gcClusteringThreshold = 20;
-	int icpsetMaximumIterations = 50;
+	float SegMentationDistanceThreshold = 0.01;//eating up the floor 
+	float sceneUniformSamplingRadius = 0.002f;//for the keypoints of the scene
+	float scenedescriberRadiusSearch = 0.02f;//for the describer of the scene and the model
+	float modelSamplingRadiusSearch = 0.008f;//keypoints of the model
+	float gcClusteringSize = 0.005f;//clustering size
+	float gcClusteringThreshold = 20;//how many points in a cluster at least
+	int icpsetMaximumIterations = 50;//for the alignment with icp
 	float icpsetMaxCorrespondenceDistance = 0.05;
-	float GoHvsetInlierThreshold = 0.05f;
+	float GoHvsetInlierThreshold = 0.05f;//HV
 	float GoHvsetOcclusionThreshold = 0.01;
 	int GoHvRegularizer = 3;
 	float GoHvsetRadiusClutter = 0.03;
@@ -130,12 +130,13 @@ int main(int argc, char** argv)
 	string sceneRGBDir = "";
 	string sceneDepthDir = "";
 
-	for (auto challengesIT : recursive_directory_range(challengesMainPath))
+	for (auto challengesIT : directory_iterator(challengesMainPath))
 	{
 		string pathIT = challengesIT.path().string();
 		boost::replace_all(pathIT, "\\", "/");
 
 		challengeName = pathIT.substr(pathIT.find_last_of("/") + 1);
+		cerr << challengeName << endl;
 		challengePath = pathIT;
 		sceneRGBDir = challengePath + "/rgb/";
 		sceneDepthDir = challengePath + "/depth/";
@@ -148,7 +149,7 @@ int main(int argc, char** argv)
 			std::cerr << "Directory Created: " << directorypath << std::endl;
 		}
 
-		for (auto it : recursive_directory_range(sceneRGBDir))
+		for (auto it : directory_iterator(sceneRGBDir))
 		{
 
 			string path = it.path().string();
@@ -318,7 +319,7 @@ int main(int argc, char** argv)
 			string modelName = "";
 
 			int index = -1;
-			for (auto it : recursive_directory_range(projectSrcDir + "/data/challenge_train/models/"))
+			for (auto it : directory_iterator(projectSrcDir + "/data/challenge_train/models/"))
 			{
 				clock_t tStart = clock();
 
