@@ -278,6 +278,13 @@ int main(int argc, char** argv)
 
 			}
 
+			if (viewer3.wasStopped() || viewer4.wasStopped())
+			{
+				viewer3.close();
+				viewer4.close();
+
+
+			}
 
 			cout << challengeName << " cloud size " << sceneCloud->size() << endl;
 			pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
