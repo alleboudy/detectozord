@@ -143,17 +143,17 @@ int main(int argc, char** argv)
 		// create directory for team name if not yet exist
 		string teamname = "/TeamZero";
 		const char* directorypathTeamName = projectSrcDir.c_str();
-		boost::filesystem::path dir(directorypathTeamName+teamname);
-		if (boost::filesystem::create_directory(dir))
+		boost::filesystem::path dirTeamName(directorypathTeamName+teamname);
+		if (boost::filesystem::create_directory(dirTeamName))
 		{
-			std::cerr << "Teamname directory created: " << dir << std::endl;
+			std::cerr << "Teamname directory created: " << dirTeamName << std::endl;
 		}
 		// create a directory for each challenge (e.g. challenge1_1) if not yet exist
 		const char* directorypathChallenges = projectSrcDir.c_str();
-		boost::filesystem::path dir(directorypathChallenges + challengeName);
-		if (boost::filesystem::create_directory(dir))
+		boost::filesystem::path dirChallenge(directorypathChallenges + challengeName);
+		if (boost::filesystem::create_directory(dirChallenge))
 		{
-			std::cerr << "Challenge directory created: " << dir << std::endl;
+			std::cerr << "Challenge directory created: " << dirChallenge << std::endl;
 		}
 
 		for (auto it : directory_iterator(sceneRGBDir))
