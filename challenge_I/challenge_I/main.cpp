@@ -85,6 +85,8 @@ int main(int argc, char** argv)
 
 	//pipeline parameters
 
+	/*
+	BIRD PARAMETERS
 	float SegMentationDistanceThreshold = 0.01;
 	float sceneUniformSamplingRadius = 0.002f;
 	float scenedescriberRadiusSearch = 0.02f;
@@ -99,6 +101,28 @@ int main(int argc, char** argv)
 	float GoHvsetRadiusClutter = 0.03;
 	int GoHvClutterRegularizer = 5;
 	float GoHvRadiusNormals = 0.05f;
+	int sceneLoadLoopStep = 1;
+
+	*/
+
+
+
+
+	float SegMentationDistanceThreshold = 0.1;
+	float sceneUniformSamplingRadius = 0.002f;
+	float scenedescriberRadiusSearch = 0.02f;
+	float modelSamplingRadiusSearch = 0.008f;
+	float gcClusteringSize = 0.005f;
+	float gcClusteringThreshold = 20;
+	int icpsetMaximumIterations = 50;
+	float icpsetMaxCorrespondenceDistance = 0.05;
+	float GoHvsetInlierThreshold = 0.05f;
+	float GoHvsetOcclusionThreshold = 0.01;
+	int GoHvRegularizer = 3;
+	float GoHvsetRadiusClutter = 0.03;
+	int GoHvClutterRegularizer = 5;
+	float GoHvRadiusNormals = 0.05f;
+	int sceneLoadLoopStep = 1;
 
 	string challengesMainPath = projectSrcDir + "/data/challenge1_val/test/";
 	string challengePath = "";
@@ -106,10 +130,13 @@ int main(int argc, char** argv)
 	string sceneRGBDir = "";
 	string sceneDepthDir = "";
 
-	for (size_t i = 1; i < 6; i++)//we have 5 scenes from 1 to 5, perhaps loading this dynamically might be better
+	for (auto challengesIT : recursive_directory_range(challengesMainPath))
 	{
-		challengeName = "challenge1_" + to_string(i);
-		challengePath = challengesMainPath + challengeName;
+		string pathIT = challengesIT.path().string();
+		boost::replace_all(pathIT, "\\", "/");
+
+		challengeName = pathIT.substr(pathIT.find_last_of("/") + 1);
+		challengePath = pathIT;
 		sceneRGBDir = challengePath + "/rgb/";
 		sceneDepthDir = challengePath + "/depth/";
 		// create directory for output files
@@ -140,9 +167,10 @@ int main(int argc, char** argv)
 			//[570.342, 0, 320, 0, 570.342, 240, 0, 0, 1]
 
 			// Setting camera intrinsic parameters of depth camera
-			float focal = 570.342;  // focal length
-			float px = 320; // principal point x
-			float py = 240; // principal point y
+			float focalx = 579.470894;  // focal length
+			float focaly = 580.338802;
+			float px = 322.229447; // principal point x
+			float py = 244.567608; // principal point y
 
 			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr originalSceneCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
@@ -151,11 +179,11 @@ int main(int argc, char** argv)
 
 			// Create point clouds from depth image and color image using camera intrinsic parameters
 			// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
-			for (int j = 0; j < depthImg.cols; j += 1)
+			for (int j = 0; j < depthImg.cols; j += sceneLoadLoopStep)
 			{
-				for (int i = 0; i < depthImg.rows; i += 1)
+				for (int i = 0; i < depthImg.rows; i += sceneLoadLoopStep)
 				{
-					auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
+					auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focalx, (i - py)*depthImg.at<ushort>(i, j) / focaly, depthImg.at<ushort>(i, j), 1);
 
 					// (2) Translate 3D point in local coordinate system to 3D point in global coordinate system using camera pose.
 					//	point = poseMat *point;
