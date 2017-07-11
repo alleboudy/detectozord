@@ -1,6 +1,6 @@
-# Challenge notes:
+# Challenge1 notes:
 
-Strategy:
+## Strategy:
 
 Our pipeline under challenge_I is used to detect models in given scenes
 
@@ -9,7 +9,7 @@ For each model, a set of parameters are to be tuned
 Given a model to detect, we use PointNet to first classify and recognize the model to load the correct set of parameters for the detection pipeline
 
 
-TODO(in progress):
+## TODO(in progress):
 
 Train the PointNet model on the data provided under train
 
@@ -21,7 +21,7 @@ Train the PointNet model on the data provided under train
 
 5- still need to find good parameters for house, bond, pot and shoe :S
 
-TODO(next):
+## TODO(next):
 
 We are matching 3d models to 2.5d scenes, which is not practically good, we need to instead take parts of the models for the matching, 
 
