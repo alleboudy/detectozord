@@ -7,10 +7,10 @@ from os import listdir
 from os.path import isfile, join
 
 
-mainplyDir='C:\\Users\\aalleboudy\\Desktop\\sample\\'
+mainplyDir='D:\\plarr\\testplyFiles\\'
 plyfiles2load=[f for f in listdir(mainplyDir) if isfile(join(mainplyDir, f))]
 #['bird-.ply','bond-.ply','can-.ply','cracker-.ply','shoe-.ply','teapot-.ply']
-outputh5FilePath='lol.h5'
+outputh5FilePath='C:\\Users\\ahmad\\Desktop\\pointnetchallengedata\\test.h5'
 
 
 
@@ -33,34 +33,48 @@ def save_h5_data_label_normal(h5_filename, data, label, normal,
     h5_fout.close()
 # Load PLY file
 def load_ply_data(filename):
-    plydata = PlyData.read(filename)
-    pc = plydata['vertex'].data
-    pcxyz_array=[]
-    pcnxyz_array=[]
-    sampled_pcxyz_array=[]
-    sampled_pcnxyz_array=[]
-    for x,y,z,_nx,_ny,_nz,_r,_g,_b,_a in pc:
-        pcxyz_array.append([x, y, z])
-        pcnxyz_array.append([_nx,_ny,_nz])
-    indices = list(range(len(pcxyz_array)))
-    indicessampled= np.random.choice(indices, size=2048)
-    for i in indicessampled:
-        sampled_pcxyz_array.append(pcxyz_array[i])
-        sampled_pcnxyz_array.append(pcnxyz_array[i])
+    try:
+        
+        plydata = PlyData.read(filename)
+        pc = plydata['vertex'].data
+        pcxyz_array=[]
+        pcnxyz_array=[]
+        sampled_pcxyz_array=[]
+        sampled_pcnxyz_array=[]
+        for x,y,z,_nx,_ny,_nz,_r,_g,_b,_a in pc:
+            pcxyz_array.append([x, y, z])
+            pcnxyz_array.append([_nx,_ny,_nz])
+        indices = list(range(len(pcxyz_array)))
+        indicessampled= np.random.choice(indices, size=2048)
+        for i in indicessampled:
+            sampled_pcxyz_array.append(pcxyz_array[i])
+            sampled_pcnxyz_array.append(pcnxyz_array[i])
 
-    return np.asarray(sampled_pcxyz_array),np.asarray(sampled_pcnxyz_array)
+        return np.asarray(sampled_pcxyz_array),np.asarray(sampled_pcnxyz_array)
+    except :
+        pass
+
+
 
 labelsMap = dict({"bird":0,"bond":1,"can":2,"cracker":3,"house":4,"shoe":5,"teapot":6})
 
 allpoints=[]
 allnormals=[]
 alllabels=[]
+counter=0
 for plyFile in plyfiles2load:
     print(plyFile)
-    plyxyz,plynxyz = load_ply_data(join(mainplyDir,plyFile))
-    allpoints.append(plyxyz)
-    allnormals.append(plynxyz)
-    alllabels.append(np.asarray([labelsMap[plyFile.split('-')[0]]]))
+    counter+=1
+    print("file number: ",counter)
+    try:
+        plyxyz,plynxyz = load_ply_data(join(mainplyDir,plyFile))
+        allpoints.append(plyxyz)
+        allnormals.append(plynxyz)
+        alllabels.append(np.asarray([labelsMap[plyFile.split('-')[0]]]))
+    except:
+        continue
+
+
 indices=list(range(len(allpoints)))
 shuffle(indices)
 
