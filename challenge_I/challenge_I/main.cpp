@@ -108,12 +108,12 @@ int main(int argc, char** argv)
 
 
 
-	float SegMentationDistanceThreshold = 0.01;//eating up the floor (more will eat up lots of points, less is undertuned)
+	float SegMentationDistanceThreshold = 0.04;//eating up the floor (more will eat up lots of points, less is undertuned)
 	float sceneUniformSamplingRadius = 0.002f;//for the keypoints of the scene(more will allow more points, less will remove less points)
 	float scenedescriberRadiusSearch = 0.02f;//for the describer of the scene and the model
-	float modelSamplingRadiusSearch = 0.008f;//keypoints of the model, larger allows more points, smaller, less points
-	float gcClusteringSize = 0.01f;//clustering size //increasing it allows more clusters
-	float gcClusteringThreshold = 20;//how many points in a cluster at least
+	float modelSamplingRadiusSearch = 0.004f;//keypoints of the model, larger allows more points, smaller, less points
+	float gcClusteringSize = 0.019f;//clustering size //increasing it allows more clusters
+	float gcClusteringThreshold = 22;//how many points in a cluster at least
 	int icpsetMaximumIterations = 50;//for the alignment with icp
 	float icpsetMaxCorrespondenceDistance = 0.05;
 
