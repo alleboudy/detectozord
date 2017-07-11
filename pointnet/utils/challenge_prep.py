@@ -2,6 +2,18 @@ from plyfile import (PlyData, PlyElement, make2d, PlyParseError, PlyProperty)
 from random import shuffle
 import numpy as np
 import h5py
+
+from os import listdir
+from os.path import isfile, join
+
+
+mainplyDir='C:\\Users\\aalleboudy\\Desktop\\sample\\'
+plyfiles2load=[f for f in listdir(mainplyDir) if isfile(join(mainplyDir, f))]
+#['bird-.ply','bond-.ply','can-.ply','cracker-.ply','shoe-.ply','teapot-.ply']
+outputh5FilePath='lol.h5'
+
+
+
 # Write numpy array data and label to h5_filename
 def save_h5_data_label_normal(h5_filename, data, label, normal, 
         data_dtype='float32', label_dtype='uint8', normal_dtype='float32'):
@@ -37,9 +49,7 @@ def load_ply_data(filename):
         sampled_pcnxyz_array.append(pcnxyz_array[i])
 
     return np.asarray(sampled_pcxyz_array),np.asarray(sampled_pcnxyz_array)
-mainplyDir='E:\\challenges\\challenge_train\\models\\'
-plyfiles2load=['bird-.ply','bond-.ply','can-.ply','cracker-.ply','shoe-.ply','teapot-.ply']
-outputh5FilePath='lol.h5'
+
 labelsMap = dict({"bird":0,"bond":1,"can":2,"cracker":3,"house":4,"shoe":5,"teapot":6})
 
 allpoints=[]
@@ -47,7 +57,7 @@ allnormals=[]
 alllabels=[]
 for plyFile in plyfiles2load:
     print(plyFile)
-    plyxyz,plynxyz = load_ply_data(mainplyDir+plyFile)
+    plyxyz,plynxyz = load_ply_data(join(mainplyDir,plyFile))
     allpoints.append(plyxyz)
     allnormals.append(plynxyz)
     alllabels.append(np.asarray([labelsMap[plyFile.split('-')[0]]]))
