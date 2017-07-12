@@ -27,6 +27,7 @@ We are matching 3d models to 2.5d scenes, which is not practically good, we need
 
 one proposed strategy is: slicing the model on the model one time per axis and taking the resulting half for the matching [means we will match 6 different halves of the model]
 
+add normals and RGB data to pointnet
 
 
 
