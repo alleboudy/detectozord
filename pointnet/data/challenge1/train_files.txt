@@ -1,1 +1,1 @@
-data/challenge1/lol.h5
+data/challenge1/train.h5

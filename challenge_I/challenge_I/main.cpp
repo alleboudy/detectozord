@@ -102,17 +102,17 @@ int main(int argc, char** argv)
 	int GoHvClutterRegularizer = 5;
 	float GoHvRadiusNormals = 0.05f;
 	int sceneLoadLoopStep = 1;
-
+	int normalEstimationK=10;
 	*/
 
 
-
-
-	float SegMentationDistanceThreshold = 0.014;//eating up the floor (more will eat up lots of points, less is undertuned)
+	/*
+	Cracker -only first scene
+	float SegMentationDistanceThreshold = 0.015;//eating up the floor (more will eat up lots of points, less is undertuned)
 	float sceneUniformSamplingRadius = 0.002f;//for the keypoints of the scene(more will allow more points, less will remove less points)
 	float scenedescriberRadiusSearch = 0.02f;//for the describer of the scene and the model
-	float modelSamplingRadiusSearch = 0.004f;//keypoints of the model, larger allows more points, smaller, less points
-	float gcClusteringSize = 0.011f;//clustering size //increasing it allows more clusters
+	float modelSamplingRadiusSearch = 0.008f;//keypoints of the model, larger allows more points, smaller, less points
+	float gcClusteringSize = 0.009f;//clustering size //increasing it allows more clusters
 	float gcClusteringThreshold = 20;//how many points in a cluster at least
 	int icpsetMaximumIterations = 50;//for the alignment with icp
 	float icpsetMaxCorrespondenceDistance = 0.05;
@@ -126,6 +126,47 @@ int main(int argc, char** argv)
 	float GoHvRadiusNormals = 0.05f;
 	//downsampling the scene cloud
 	int sceneLoadLoopStep = 2;
+	int normalEstimationK=10;
+	*/
+	bool split = false;//for taking splits of the model against the axis 
+
+	//SHOE PARAMS, BROKEN!!!
+	//float SegMentationDistanceThreshold = 0.03;//eating up the floor (more will eat up lots of points, less is undertuned)
+	//float sceneUniformSamplingRadius = 0.002f;//for the keypoints of the scene(more will allow more points, less will remove less points)
+	//float scenedescriberRadiusSearch = 0.2f;//for the describer of the scene and the model
+	//float modelSamplingRadiusSearch = 0.002f;//keypoints of the model, larger allows less points, smaller, more points
+	//float gcClusteringSize = 0.005f;//clustering size //increasing it allows more clusters
+	//float gcClusteringThreshold = 25;//how many points in a cluster at least
+	//int icpsetMaximumIterations = 50;//for the alignment with icp
+	//float icpsetMaxCorrespondenceDistance = 0.05;
+
+	////Hypothesis verrification parameters:
+	//float GoHvsetInlierThreshold = 0.05f;//HV, increasing allows more correspondences to pass
+	//float GoHvsetOcclusionThreshold = 0.01;
+	//int GoHvRegularizer = 3;
+	//float GoHvsetRadiusClutter = 0.03;
+	//int GoHvClutterRegularizer = 5;
+	//float GoHvRadiusNormals = 0.05f;
+	////downsampling the scene cloud
+	//int sceneLoadLoopStep = 1;
+	//int normalEstimationK = 10;
+
+	float SegMentationDistanceThreshold = 0.01;
+	float sceneUniformSamplingRadius = 0.006f;
+	float scenedescriberRadiusSearch = 0.05f;
+	float modelSamplingRadiusSearch = 0.006f;
+	float gcClusteringSize = 0.05f;
+	float gcClusteringThreshold = 20;
+	int icpsetMaximumIterations = 50;
+	float icpsetMaxCorrespondenceDistance = 0.05;
+	float GoHvsetInlierThreshold = 0.05f;
+	float GoHvsetOcclusionThreshold = 0.01;
+	int GoHvRegularizer = 3;
+	float GoHvsetRadiusClutter = 0.03;
+	int GoHvClutterRegularizer = 5;
+	float GoHvRadiusNormals = 0.05f;
+	int sceneLoadLoopStep = 1;
+	int normalEstimationK = 100;
 
 	string challengesMainPath = projectSrcDir + "/data/challenge1_val/test/";
 	string challengePath = "";
@@ -281,7 +322,7 @@ int main(int argc, char** argv)
 
 			}
 
-			if (viewer3.wasStopped() || viewer4.wasStopped())
+			//if (viewer3.wasStopped() || viewer4.wasStopped())
 			{
 				viewer3.close();
 				viewer4.close();
@@ -292,7 +333,7 @@ int main(int argc, char** argv)
 			cout << challengeName << " cloud size " << sceneCloud->size() << endl;
 			pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
 			pcl::PointCloud<pcl::Normal>::Ptr scene_normals(new pcl::PointCloud<pcl::Normal>);
-			ne.setKSearch(10);
+			ne.setKSearch(normalEstimationK);
 
 
 
@@ -490,12 +531,141 @@ int main(int argc, char** argv)
 				//cout << "Computing model " << modelName << "  normals" << endl;
 				//ne.setInputCloud(modelCloud);
 				//ne.compute(*model_normals);
+				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr ZLmodelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+				/*pcl::PointCloud<pcl::PointXYZRGBA>::Ptr ZSmodelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr XLmodelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr XSmodelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr YLmodelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr YSmodelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
+				pcl::PointCloud<pcl::Normal>::Ptr ZSmodel_normals(new pcl::PointCloud<pcl::Normal>);
+				pcl::PointCloud<pcl::Normal>::Ptr XLmodel_normals(new pcl::PointCloud<pcl::Normal>);
+				pcl::PointCloud<pcl::Normal>::Ptr XSmodel_normals(new pcl::PointCloud<pcl::Normal>);
+				pcl::PointCloud<pcl::Normal>::Ptr YLmodel_normals(new pcl::PointCloud<pcl::Normal>);
+				pcl::PointCloud<pcl::Normal>::Ptr YSmodel_normals(new pcl::PointCloud<pcl::Normal>);
+
+*/
+				pcl::PointCloud<pcl::Normal>::Ptr ZLmodel_normals(new pcl::PointCloud<pcl::Normal>);
 
 				modelCloud->points.resize(modelCloudWithNormals->size());
 				model_normals->points.resize(modelCloudWithNormals->size());
 
 				for (size_t i = 0; i < modelCloudWithNormals->points.size(); i++) {
+
+					/*if (modelCloudWithNormals->points[i].x<=0)
+					{
+						PointXYZRGBA p;
+						p.x = modelCloudWithNormals->points[i].x;
+						p.y = modelCloudWithNormals->points[i].y;
+						p.z = modelCloudWithNormals->points[i].z;
+						p.r = modelCloudWithNormals->points[i].r;
+						p.g = modelCloudWithNormals->points[i].g;
+						p.b = modelCloudWithNormals->points[i].b;
+						p.a = 255;
+						XSmodelCloud->push_back(p);
+
+						Normal n;
+						n.normal_x = modelCloudWithNormals->points[i].normal_x;
+						n.normal_y = modelCloudWithNormals->points[i].normal_y;
+						n.normal_z = modelCloudWithNormals->points[i].normal_z;
+
+						XSmodel_normals->push_back(n);
+
+
+
+					
+
+					}*/
+
+					if (modelCloudWithNormals->points[i].x > 0 && modelCloudWithNormals->points[i].z > 0 && modelCloudWithNormals->points[i].y > 0)
+					{
+
+						PointXYZRGBA p;
+						p.x = modelCloudWithNormals->points[i].x;
+						p.y = modelCloudWithNormals->points[i].y;
+						p.z = modelCloudWithNormals->points[i].z;
+						p.r = modelCloudWithNormals->points[i].r;
+						p.g = modelCloudWithNormals->points[i].g;
+						p.b = modelCloudWithNormals->points[i].b;
+						p.a = 255;
+						ZLmodelCloud->push_back(p);
+
+						Normal n;
+						n.normal_x = modelCloudWithNormals->points[i].normal_x;
+						n.normal_y = modelCloudWithNormals->points[i].normal_y;
+						n.normal_z = modelCloudWithNormals->points[i].normal_z;
+
+						ZLmodel_normals->push_back(n);
+
+					}
+
+				/*	if (modelCloudWithNormals->points[i].y > 0)
+					{
+
+						YLmodelCloud->points[i].x = modelCloudWithNormals->points[i].x;
+						YLmodelCloud->points[i].y = modelCloudWithNormals->points[i].y;
+						YLmodelCloud->points[i].z = modelCloudWithNormals->points[i].z;
+						YLmodelCloud->points[i].r = modelCloudWithNormals->points[i].r;
+						YLmodelCloud->points[i].g = modelCloudWithNormals->points[i].g;
+						YLmodelCloud->points[i].b = modelCloudWithNormals->points[i].b;
+						YLmodelCloud->points[i].a = 255;
+						YLmodel_normals->points[i].normal_x = modelCloudWithNormals->points[i].normal[0];
+						YLmodel_normals->points[i].normal_y = modelCloudWithNormals->points[i].normal[1];
+						YLmodel_normals->points[i].normal_z = modelCloudWithNormals->points[i].normal[2];
+
+					}
+					if (modelCloudWithNormals->points[i].y <= 0)
+					{
+						PointXYZRGBA p;
+						p.x = modelCloudWithNormals->points[i].x;
+						p.y = modelCloudWithNormals->points[i].y;
+						p.z = modelCloudWithNormals->points[i].z;
+						p.r = modelCloudWithNormals->points[i].r;
+						p.g = modelCloudWithNormals->points[i].g;
+						p.b = modelCloudWithNormals->points[i].b;
+						p.a = 255;
+						XSmodelCloud->push_back(p);
+
+						Normal n;
+						n.normal_x = modelCloudWithNormals->points[i].normal_x;
+						n.normal_y = modelCloudWithNormals->points[i].normal_y;
+						n.normal_z = modelCloudWithNormals->points[i].normal_z;
+
+						XSmodel_normals->push_back(n);
+
+					}
+					if (modelCloudWithNormals->points[i].z <= 0)
+					{
+
+						ZSmodelCloud->points[i].x = modelCloudWithNormals->points[i].x;
+						ZSmodelCloud->points[i].y = modelCloudWithNormals->points[i].y;
+						ZSmodelCloud->points[i].z = modelCloudWithNormals->points[i].z;
+						ZSmodelCloud->points[i].r = modelCloudWithNormals->points[i].r;
+						ZSmodelCloud->points[i].g = modelCloudWithNormals->points[i].g;
+						ZSmodelCloud->points[i].b = modelCloudWithNormals->points[i].b;
+						ZSmodelCloud->points[i].a = 255;
+						ZSmodel_normals->points[i].normal_x = modelCloudWithNormals->points[i].normal[0];
+						ZSmodel_normals->points[i].normal_y = modelCloudWithNormals->points[i].normal[1];
+						ZSmodel_normals->points[i].normal_z = modelCloudWithNormals->points[i].normal[2];
+
+					}
+					if (modelCloudWithNormals->points[i].z > 0)
+					{
+
+						ZLmodelCloud->points[i].x = modelCloudWithNormals->points[i].x;
+						ZLmodelCloud->points[i].y = modelCloudWithNormals->points[i].y;
+						ZLmodelCloud->points[i].z = modelCloudWithNormals->points[i].z;
+						ZLmodelCloud->points[i].r = modelCloudWithNormals->points[i].r;
+						ZLmodelCloud->points[i].g = modelCloudWithNormals->points[i].g;
+						ZLmodelCloud->points[i].b = modelCloudWithNormals->points[i].b;
+						ZLmodelCloud->points[i].a = 255;
+						ZLmodel_normals->points[i].normal_x = modelCloudWithNormals->points[i].normal[0];
+						ZLmodel_normals->points[i].normal_y = modelCloudWithNormals->points[i].normal[1];
+						ZLmodel_normals->points[i].normal_z = modelCloudWithNormals->points[i].normal[2];
+
+					}*/
+
+
 					modelCloud->points[i].x = modelCloudWithNormals->points[i].x;
 					modelCloud->points[i].y = modelCloudWithNormals->points[i].y;
 					modelCloud->points[i].z = modelCloudWithNormals->points[i].z;
@@ -509,6 +679,14 @@ int main(int argc, char** argv)
 
 				}
 				
+
+				if (split)
+				{
+					modelCloud = ZLmodelCloud;
+					model_normals = ZLmodel_normals;
+				}
+			
+
 				cout << "Computing model " << modelName << "  normals" << endl;
 				ne.setInputCloud(modelCloud);
 				ne.compute(*model_normals);
@@ -621,6 +799,27 @@ int main(int argc, char** argv)
 
 				cout << "sampled modelSampledCloud :" + to_string(modelSampledCloud->size()) << endl;
 
+				pcl::visualization::PCLVisualizer viewer5("sampled model");
+				viewer5.addPointCloud(modelSampledCloud, "sampledmodel");
+				viewer5.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sampledmodel");
+
+				pcl::visualization::PCLVisualizer viewer6("sampled scene");
+				viewer6.addPointCloud(sceneSampledCloud, "sampledscene");
+				viewer6.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sampledscene");
+
+				//	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene");
+
+
+
+				while (!viewer5.wasStopped() &&!viewer6.wasStopped())
+				{
+					viewer5.spinOnce(100);
+					viewer6.spinOnce(100);
+
+				}
+
+				viewer5.close();
+				viewer6.close();
 
 
 				//// c) Compute descriptor for keypoints
@@ -644,8 +843,8 @@ int main(int argc, char** argv)
 				pcl::CorrespondencesPtr model_scene_corrs(new pcl::Correspondences());
 				pcl::KdTreeFLANN<SHOT352> match_search;
 				match_search.setInputCloud(modelDescriptors);
-				//std::vector<int> modelKPindices;
-				//std::vector<int> sceneKPindices;
+				std::vector<int> modelKPindices;
+				std::vector<int> sceneKPindices;
 
 				for (size_t i = 0; i < sceneDescriptors->size(); ++i)
 				{
@@ -662,20 +861,28 @@ int main(int argc, char** argv)
 					{
 						pcl::Correspondence corr(neigh_indices[0], static_cast<int> (i), neigh_sqr_dists[0]);
 						model_scene_corrs->push_back(corr);
-						//modelKPindices.push_back(corr.index_query);
-						//sceneKPindices.push_back(corr.index_match);
+						modelKPindices.push_back(corr.index_query);
+						sceneKPindices.push_back(corr.index_match);
 					}
 				}
-				//pcl::PointCloud<PointType>::Ptr modelKeyPoints(new pcl::PointCloud<PointType>());
-				//pcl::PointCloud<PointType>::Ptr sceneKeyPoints(new pcl::PointCloud<PointType>());
-				//pcl::copyPointCloud(*modelSampledCloudPtr, modelKPindices, *modelKeyPoints);
-				//pcl::copyPointCloud(*sceneSampledCloudPtr, sceneKPindices, *sceneKeyPoints);
+				pcl::PointCloud<PointType>::Ptr modelKeyPoints(new pcl::PointCloud<PointType>());
+				pcl::PointCloud<PointType>::Ptr sceneKeyPoints(new pcl::PointCloud<PointType>());
+				pcl::copyPointCloud(*modelSampledCloud, modelKPindices, *modelKeyPoints);
+				pcl::copyPointCloud(*sceneSampledCloud, sceneKPindices, *sceneKeyPoints);
 
 				std::cout << "model_scene_corrs: " << model_scene_corrs->size() << std::endl;
 
 
+				pcl::visualization::PCLVisualizer viewer7("visualizing correspondences");
+				viewer7.addPointCloud(originalSceneCloud, "scene");
+				//viewer7.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
+				viewer7.addPointCloud(modelCloud,"model");
+				viewer7.addCorrespondences<PointXYZRGBA>(modelCloud, sceneCloud, *model_scene_corrs);
 
-
+				while (!viewer7.wasStopped())
+				{
+					viewer7.spinOnce(100);
+				}
 				/*std::vector<pcl::Correspondence> model_scene_corrs;
 
 				pcl::KdTreeFLANN<DescriptorType> match_search;
@@ -860,7 +1067,7 @@ int main(int argc, char** argv)
 				pcl::visualization::PCLVisualizer viewer("3d viewer");
 				viewer.addPointCloud(originalSceneCloud, "scene");
 				viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
-
+				//viewer.addCorrespondences<PointXYZRGBA>(modelCloud, sceneCloud, *model_scene_corrs);
 				//viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 1, 1, "scene");
 
 				double timeTaken = (double)(((double)(clock() - tStart)) / CLOCKS_PER_SEC);
@@ -873,13 +1080,14 @@ int main(int argc, char** argv)
 				// YY: object that is present in the image (e.g. bird)
 				// 6D pose is written to output file
 
+	
 
 				for (size_t i = 0; i < registeredModelClusteredKeyPoints.size(); i++)
 				{
-
+					viewer.addPointCloud(registeredModelClusteredKeyPoints[i], "instance" + to_string(i));
+					
 					if (mask_hv[i])
 					{
-						viewer.addPointCloud(registeredModelClusteredKeyPoints[i], "instance" + to_string(i));
 						// output transformation matrix 
 						// TODO: find out how to compute score
 						double score = 0;
@@ -914,7 +1122,7 @@ int main(int argc, char** argv)
 					{
 						cout << "instance" + to_string(i) + " bad" << endl;
 
-						//	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "instance" + to_string(i));
+							viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "instance" + to_string(i));
 
 					}
 					viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance" + to_string(i));
