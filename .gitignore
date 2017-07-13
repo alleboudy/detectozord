@@ -301,3 +301,4 @@ checkpoints/
 challenge_I/data
 pointnet
 utils
+.yml
