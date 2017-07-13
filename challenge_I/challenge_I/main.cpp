@@ -59,25 +59,58 @@ using namespace boost::filesystem;
 
 
 
+double
+computeCloudResolution(const pcl::PointCloud<PointType>::ConstPtr &cloud)
+{
+	double res = 0.0;
+	int n_points = 0;
+	int nres;
+	std::vector<int> indices(2);
+	std::vector<float> sqr_distances(2);
+	pcl::search::KdTree<PointType> tree;
+	tree.setInputCloud(cloud);
+
+	for (size_t i = 0; i < cloud->size(); ++i)
+	{
+		if (!pcl_isfinite((*cloud)[i].x))
+		{
+			continue;
+		}
+		//Considering the second neighbor since the first is the point itself.
+		nres = tree.nearestKSearch(i, 2, indices, sqr_distances);
+		if (nres == 2)
+		{
+			res += sqrt(sqr_distances[1]);
+			++n_points;
+		}
+	}
+	if (n_points != 0)
+	{
+		res /= n_points;
+	}
+	return res;
+}
+
+
 
 //-- iterating over files
 /*
 struct recursive_directory_range
 {
-	typedef recursive_directory_iterator iterator;
-	recursive_directory_range(path p) : p_(p) {}
+typedef recursive_directory_iterator iterator;
+recursive_directory_range(path p) : p_(p) {}
 
-	iterator begin() { return recursive_directory_iterator(p_); }
-	iterator end() { return recursive_directory_iterator(); }
+iterator begin() { return recursive_directory_iterator(p_); }
+iterator end() { return recursive_directory_iterator(); }
 
-	path p_;
+path p_;
 };
 */
 int main(int argc, char** argv)
 {
 	std::string projectSrcDir = PROJECT_SOURCE_DIR;
-	
-	//0-  loading all (10) of the scene clouds in the testing folder and keeping them for testing.
+
+	//0-  loading all of the scene clouds and keeping them for testing.
 
 	//	std::unordered_map<std::string, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> Scenes;
 
@@ -102,27 +135,119 @@ int main(int argc, char** argv)
 	int GoHvClutterRegularizer = 5;
 	float GoHvRadiusNormals = 0.05f;
 	int sceneLoadLoopStep = 1;
+	int normalEstimationK=10;
+	float kdnearestDistance = 0.25f;
 
 	*/
 
 
-
-	// HOUSE PARAMETERS
-	float SegMentationDistanceThreshold = 0.01;//eating up the floor (more will eat up lots of points, less is undertuned)
+	/*
+	Cracker -only first scene
+	float SegMentationDistanceThreshold = 0.015;//eating up the floor (more will eat up lots of points, less is undertuned)
 	float sceneUniformSamplingRadius = 0.002f;//for the keypoints of the scene(more will allow more points, less will remove less points)
 	float scenedescriberRadiusSearch = 0.02f;//for the describer of the scene and the model
-	float modelSamplingRadiusSearch = 0.008f;//keypoints of the model
-	float gcClusteringSize = 0.005f;//clustering size
+	float modelSamplingRadiusSearch = 0.008f;//keypoints of the model, larger allows more points, smaller, less points
+	float gcClusteringSize = 0.009f;//clustering size //increasing it allows more clusters
 	float gcClusteringThreshold = 20;//how many points in a cluster at least
 	int icpsetMaximumIterations = 50;//for the alignment with icp
 	float icpsetMaxCorrespondenceDistance = 0.05;
-	float GoHvsetInlierThreshold = 0.5f;//HV
+
+	//Hypothesis verrification parameters:
+	float GoHvsetInlierThreshold = 0.05f;//HV, increasing allows more correspondences to pass
 	float GoHvsetOcclusionThreshold = 0.01;
 	int GoHvRegularizer = 3;
 	float GoHvsetRadiusClutter = 0.03;
 	int GoHvClutterRegularizer = 5;
 	float GoHvRadiusNormals = 0.05f;
-	int sceneLoadLoopStep = 1;
+	//downsampling the scene cloud
+	int sceneLoadLoopStep = 2;
+	int normalEstimationK=10;
+	float kdnearestDistance = 0.25f;
+
+	*/
+
+	//SHOE PARAMS, BROKEN!!!
+	//float SegMentationDistanceThreshold = 0.03;//eating up the floor (more will eat up lots of points, less is undertuned)
+	//float sceneUniformSamplingRadius = 0.002f;//for the keypoints of the scene(more will allow more points, less will remove less points)
+	//float scenedescriberRadiusSearch = 0.2f;//for the describer of the scene and the model
+	//float modelSamplingRadiusSearch = 0.002f;//keypoints of the model, larger allows less points, smaller, more points
+	//float gcClusteringSize = 0.005f;//clustering size //increasing it allows more clusters
+	//float gcClusteringThreshold = 25;//how many points in a cluster at least
+	//int icpsetMaximumIterations = 50;//for the alignment with icp
+	//float icpsetMaxCorrespondenceDistance = 0.05;
+
+	////Hypothesis verrification parameters:
+	//float GoHvsetInlierThreshold = 0.05f;//HV, increasing allows more correspondences to pass
+	//float GoHvsetOcclusionThreshold = 0.01;
+	//int GoHvRegularizer = 3;
+	//float GoHvsetRadiusClutter = 0.03;
+	//int GoHvClutterRegularizer = 5;
+	//float GoHvRadiusNormals = 0.05f;
+	////downsampling the scene cloud
+	//int sceneLoadLoopStep = 1;
+	//int normalEstimationK = 10;
+	//float kdnearestDistance = 0.25f;
+
+
+
+	bool split = false;//for taking splits of the model against the axis 
+
+
+
+
+	float SegMentationDistanceThreshold = 0.01;
+	float sceneUniformSamplingRadius = 0.001f;
+	float scenedescriberRadiusSearch = 0.2f;
+	float modelSamplingRadiusSearch = 0.001f;
+	float gcClusteringSize = 0.005f;
+	float gcClusteringThreshold = 20;
+	int icpsetMaximumIterations = 50;
+	float icpsetMaxCorrespondenceDistance = 0.05;
+	float GoHvsetInlierThreshold = 0.05f;
+	float GoHvsetOcclusionThreshold = 0.01;
+	int GoHvRegularizer = 3;
+	float GoHvsetRadiusClutter = 0.03;
+	int GoHvClutterRegularizer = 5;
+	float GoHvRadiusNormals = 0.05f;
+	int sceneLoadLoopStep = 2;
+	int normalEstimationK = 100;
+	float kdnearestDistance = 0.25f;
+
+
+	//ISS PARAMS
+	bool useISS = false;
+	double scene_resolution;
+	double model_resolution;
+
+	double iss_salient_radius_;
+	double iss_non_max_radius_;
+	double iss_gamma_21_(0.975);
+	double iss_gamma_32_(0.975);
+	double iss_min_neighbors_(5);
+	double iss_normal_radius_ ;
+	double iss_border_radius_ ;
+	int iss_threads_(4);
+
+
+
+	//float SegMentationDistanceThreshold = 0.01;
+	//float sceneUniformSamplingRadius = 0.005f;
+	//float scenedescriberRadiusSearch = 0.07f;
+	//float modelSamplingRadiusSearch = 0.005f;
+	//float gcClusteringSize = 0.05f;
+	//float gcClusteringThreshold = 20;
+	//int icpsetMaximumIterations = 50;
+	//float icpsetMaxCorrespondenceDistance = 0.05;
+	//float GoHvsetInlierThreshold = 0.05f;
+	//float GoHvsetOcclusionThreshold = 0.01;
+	//int GoHvRegularizer = 3;
+	//float GoHvsetRadiusClutter = 0.03;
+	//int GoHvClutterRegularizer = 5;
+	//float GoHvRadiusNormals = 0.05f;
+	//int sceneLoadLoopStep = 1;
+	//int normalEstimationK = 100;
+	//float kdnearestDistance = 0.1f;
+
 
 	string challengesMainPath = projectSrcDir + "/data/challenge1_val/test/";
 	string challengePath = "";
@@ -140,11 +265,10 @@ int main(int argc, char** argv)
 		challengePath = pathIT;
 		sceneRGBDir = challengePath + "/rgb/";
 		sceneDepthDir = challengePath + "/depth/";
-
 		// create directory for team name if not yet exist
 		string teamname = "/TeamZero";
 		const char* directorypathTeamName = projectSrcDir.c_str();
-		boost::filesystem::path dirTeamName(directorypathTeamName+teamname);
+		boost::filesystem::path dirTeamName(directorypathTeamName + teamname);
 		if (boost::filesystem::create_directory(dirTeamName))
 		{
 			std::cerr << "Teamname directory created: " << dirTeamName << std::endl;
@@ -159,13 +283,16 @@ int main(int argc, char** argv)
 
 		for (auto it : directory_iterator(sceneRGBDir))
 		{
+
 			string path = it.path().string();
 			boost::replace_all(path, "\\", "/");
 			string colorSceneFilepath = path;
 			string colorSceneFilename = colorSceneFilepath.substr(colorSceneFilepath.find_last_of("/") + 1);
 
+			//cout << path << endl;
 			boost::replace_all(path, "rgb", "depth");
 			string depthSceneFilepath = path;
+			//cout << path << endl;
 
 			cv::Mat depthImg = cv::imread(depthSceneFilepath, CV_LOAD_IMAGE_UNCHANGED);
 			cv::Mat colorImg = cv::imread(colorSceneFilepath, CV_LOAD_IMAGE_COLOR);
@@ -181,14 +308,15 @@ int main(int argc, char** argv)
 			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr originalSceneCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
-			// (1) Create point clouds from depth image and color image using camera intrinsic parameters.
-			// Compute 3D points from depth values and pixel locations on depth image using camera intrinsic parameters.
-			// loop through all depth pixels
-			for (int x = 0; x < depthImg.cols; x += sceneLoadLoopStep)
+
+
+			// Create point clouds from depth image and color image using camera intrinsic parameters
+			// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
+			for (int j = 0; j < depthImg.cols; j += sceneLoadLoopStep)
 			{
-				for (int y = 0; y < depthImg.rows; y += sceneLoadLoopStep)
+				for (int i = 0; i < depthImg.rows; i += sceneLoadLoopStep)
 				{
-					auto point = Eigen::Vector4f((x - px)*depthImg.at<ushort>(y, x) / focalx, (y - py)*depthImg.at<ushort>(y, x) / focaly, depthImg.at<ushort>(y, x), 1);
+					auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focalx, (i - py)*depthImg.at<ushort>(i, j) / focaly, depthImg.at<ushort>(i, j), 1);
 
 					// (2) Translate 3D point in local coordinate system to 3D point in global coordinate system using camera pose.
 					//	point = poseMat *point;
@@ -197,9 +325,9 @@ int main(int argc, char** argv)
 					p.x = point[0] / 1000.0f;
 					p.y = point[1] / 1000.0f;
 					p.z = point[2] / 1000.0f;
-					p.r = colorImg.at<cv::Vec3b>(y, x)[0];
-					p.g = colorImg.at<cv::Vec3b>(y, x)[1];
-					p.b = colorImg.at<cv::Vec3b>(y, x)[2];
+					p.r = colorImg.at<cv::Vec3b>(i, j)[0];
+					p.g = colorImg.at<cv::Vec3b>(i, j)[1];
+					p.b = colorImg.at<cv::Vec3b>(i, j)[2];
 					p.a = 255;
 					if (p.r == 0 && p.g == 0 && p.b == 0)
 					{
@@ -231,37 +359,51 @@ int main(int argc, char** argv)
 			// Optional
 			seg.setOptimizeCoefficients(true);
 			// Mandatory
+			seg.setModelType(pcl::SACMODEL_PLANE);
+			seg.setMethodType(pcl::SAC_RANSAC);
+			seg.setDistanceThreshold(SegMentationDistanceThreshold);
+			seg.setInputCloud(sceneCloud);
+			seg.segment(*inliers, *coefficients);
 
-			// remove ground
-			//seg.setModelType(pcl::SACMODEL_PLANE);
-			//seg.setMethodType(pcl::SAC_RANSAC);
-			//seg.setDistanceThreshold(SegMentationDistanceThreshold);
-			//seg.setInputCloud(sceneCloud);
-			//seg.segment(*inliers, *coefficients);
+			pcl::ExtractIndices<PointType> eifilter(true); // Initializing with true will allow us to extract the removed indices
+			eifilter.setInputCloud(sceneCloud);
+			eifilter.setIndices(inliers);
+			eifilter.setNegative(true);
+			eifilter.filterDirectly(sceneCloud);
+
+			seg.setModelType(pcl::SACMODEL_PLANE);
+			seg.setDistanceThreshold(0.1);
+			seg.setInputCloud(sceneCloud);
+			seg.segment(*inliers, *coefficients);
 
 			//pcl::ExtractIndices<PointType> eifilter(true); // Initializing with true will allow us to extract the removed indices
-			//eifilter.setInputCloud(sceneCloud);
-			//eifilter.setIndices(inliers);
-			//eifilter.setNegative(true);
-			//eifilter.filterDirectly(sceneCloud);
-			//
-			//// remove the wall
-			//seg.setModelType(pcl::SACMODEL_PARALLEL_PLANE);
-			//seg.setDistanceThreshold(0.01);
-			//seg.setInputCloud(sceneCloud);
-			//seg.segment(*inliers, *coefficients);
+			eifilter.setInputCloud(sceneCloud);
+			eifilter.setIndices(inliers);
+			eifilter.setNegative(true);
+			eifilter.filterDirectly(sceneCloud);
+			//	copyPointCloud(*sceneCloud, inliers->indices, *sceneCloud);
 
-			////pcl::ExtractIndices<PointType> eifilter(true); // Initializing with true will allow us to extract the removed indices
-			//eifilter.setInputCloud(sceneCloud);
-			//eifilter.setIndices(inliers);
-			//eifilter.setNegative(true);
-			//eifilter.filterDirectly(sceneCloud);
-			//copyPointCloud(*sceneCloud, inliers->indices, *sceneCloud);
-			
+
+
+			seg.setModelType(pcl::SACMODEL_PLANE);
+			seg.setRadiusLimits(0.01,0.1);
+			seg.setDistanceThreshold(0.1);
+			seg.setInputCloud(sceneCloud);
+			seg.segment(*inliers, *coefficients);
+
+			//pcl::ExtractIndices<PointType> eifilter(true); // Initializing with true will allow us to extract the removed indices
+			eifilter.setInputCloud(sceneCloud);
+			eifilter.setIndices(inliers);
+			eifilter.setNegative(true);
+			eifilter.filterDirectly(sceneCloud);
+
+
+
+
 			pcl::visualization::PCLVisualizer viewer3("3d scene after segmentation");
 			viewer3.addPointCloud(sceneCloud, "scene");
 			viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
-		//	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene");
+			//	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene");
 
 
 			pcl::visualization::PCLVisualizer viewer4("3d scene original cloud");
@@ -278,7 +420,7 @@ int main(int argc, char** argv)
 
 			}
 
-			if (viewer3.wasStopped() || viewer4.wasStopped())
+			//if (viewer3.wasStopped() || viewer4.wasStopped())
 			{
 				viewer3.close();
 				viewer4.close();
@@ -289,7 +431,7 @@ int main(int argc, char** argv)
 			cout << challengeName << " cloud size " << sceneCloud->size() << endl;
 			pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
 			pcl::PointCloud<pcl::Normal>::Ptr scene_normals(new pcl::PointCloud<pcl::Normal>);
-			ne.setKSearch(10);
+			ne.setKSearch(normalEstimationK);
 
 
 
@@ -307,10 +449,49 @@ int main(int argc, char** argv)
 
 			pcl::UniformSampling<pcl::PointXYZRGBA> uniform_sampling;
 			uniform_sampling.setRadiusSearch(sceneUniformSamplingRadius); //the 3D grid leaf size
+
 			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneSampledCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
-			uniform_sampling.setInputCloud(sceneCloud);
-			uniform_sampling.filter(*sceneSampledCloud);
-			cout << "sampled sceneSampledCloud :" + to_string(sceneSampledCloud->size()) << endl;
+			pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGBA>());//used in case of iss
+			if (!useISS)
+			{
+				uniform_sampling.setInputCloud(sceneCloud);
+				uniform_sampling.filter(*sceneSampledCloud);
+				cout << "sampled sceneSampledCloud :" + to_string(sceneSampledCloud->size()) << endl;
+
+			}
+			else
+			{
+
+				//
+				// Compute keypoints
+				//
+				pcl::ISSKeypoint3D<pcl::PointXYZRGBA, pcl::PointXYZRGBA> iss_detector;
+
+				iss_detector.setSearchMethod(tree);
+
+
+				scene_resolution = computeCloudResolution(sceneCloud);
+				cout << "Scene resolution" << scene_resolution << endl;
+				iss_salient_radius_ = 6 * scene_resolution;
+				iss_non_max_radius_ = 4 * scene_resolution;
+				iss_normal_radius_ = 4 * scene_resolution;
+				iss_border_radius_ = 1 * scene_resolution;
+				iss_detector.setSalientRadius(iss_salient_radius_);
+				iss_detector.setNonMaxRadius(iss_non_max_radius_);
+				iss_detector.setThreshold21(iss_gamma_21_);
+				iss_detector.setThreshold32(iss_gamma_32_);
+				iss_detector.setNormalRadius(iss_normal_radius_);
+				iss_detector.setBorderRadius(iss_border_radius_);
+				iss_detector.setMinNeighbors(iss_min_neighbors_);
+				iss_detector.setNumberOfThreads(iss_threads_);
+				iss_detector.setInputCloud(sceneCloud);
+				iss_detector.compute(*sceneSampledCloud);
+
+				
+
+				cout << "ISS Keypoints detected for scene :" + to_string(sceneSampledCloud->size()) << endl;
+
+			}
 
 			cout << "Creating scene " << challengeName << " Descriptors" << endl;
 
@@ -487,12 +668,141 @@ int main(int argc, char** argv)
 				//cout << "Computing model " << modelName << "  normals" << endl;
 				//ne.setInputCloud(modelCloud);
 				//ne.compute(*model_normals);
+				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr ZLmodelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+				/*pcl::PointCloud<pcl::PointXYZRGBA>::Ptr ZSmodelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr XLmodelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr XSmodelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr YLmodelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr YSmodelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
+				pcl::PointCloud<pcl::Normal>::Ptr ZSmodel_normals(new pcl::PointCloud<pcl::Normal>);
+				pcl::PointCloud<pcl::Normal>::Ptr XLmodel_normals(new pcl::PointCloud<pcl::Normal>);
+				pcl::PointCloud<pcl::Normal>::Ptr XSmodel_normals(new pcl::PointCloud<pcl::Normal>);
+				pcl::PointCloud<pcl::Normal>::Ptr YLmodel_normals(new pcl::PointCloud<pcl::Normal>);
+				pcl::PointCloud<pcl::Normal>::Ptr YSmodel_normals(new pcl::PointCloud<pcl::Normal>);
+
+				*/
+				pcl::PointCloud<pcl::Normal>::Ptr ZLmodel_normals(new pcl::PointCloud<pcl::Normal>);
 
 				modelCloud->points.resize(modelCloudWithNormals->size());
 				model_normals->points.resize(modelCloudWithNormals->size());
 
 				for (size_t i = 0; i < modelCloudWithNormals->points.size(); i++) {
+
+					/*if (modelCloudWithNormals->points[i].x<=0)
+					{
+					PointXYZRGBA p;
+					p.x = modelCloudWithNormals->points[i].x;
+					p.y = modelCloudWithNormals->points[i].y;
+					p.z = modelCloudWithNormals->points[i].z;
+					p.r = modelCloudWithNormals->points[i].r;
+					p.g = modelCloudWithNormals->points[i].g;
+					p.b = modelCloudWithNormals->points[i].b;
+					p.a = 255;
+					XSmodelCloud->push_back(p);
+
+					Normal n;
+					n.normal_x = modelCloudWithNormals->points[i].normal_x;
+					n.normal_y = modelCloudWithNormals->points[i].normal_y;
+					n.normal_z = modelCloudWithNormals->points[i].normal_z;
+
+					XSmodel_normals->push_back(n);
+
+
+
+
+
+					}*/
+
+					if (modelCloudWithNormals->points[i].y >= 0 /*&& modelCloudWithNormals->points[i].z > 0 && modelCloudWithNormals->points[i].y > 0*/)
+					{
+
+						PointXYZRGBA p;
+						p.x = modelCloudWithNormals->points[i].x;
+						p.y = modelCloudWithNormals->points[i].y;
+						p.z = modelCloudWithNormals->points[i].z;
+						p.r = modelCloudWithNormals->points[i].r;
+						p.g = modelCloudWithNormals->points[i].g;
+						p.b = modelCloudWithNormals->points[i].b;
+						p.a = 255;
+						ZLmodelCloud->push_back(p);
+
+						Normal n;
+						n.normal_x = modelCloudWithNormals->points[i].normal_x;
+						n.normal_y = modelCloudWithNormals->points[i].normal_y;
+						n.normal_z = modelCloudWithNormals->points[i].normal_z;
+
+						ZLmodel_normals->push_back(n);
+
+					}
+
+					/*	if (modelCloudWithNormals->points[i].y > 0)
+						{
+
+						YLmodelCloud->points[i].x = modelCloudWithNormals->points[i].x;
+						YLmodelCloud->points[i].y = modelCloudWithNormals->points[i].y;
+						YLmodelCloud->points[i].z = modelCloudWithNormals->points[i].z;
+						YLmodelCloud->points[i].r = modelCloudWithNormals->points[i].r;
+						YLmodelCloud->points[i].g = modelCloudWithNormals->points[i].g;
+						YLmodelCloud->points[i].b = modelCloudWithNormals->points[i].b;
+						YLmodelCloud->points[i].a = 255;
+						YLmodel_normals->points[i].normal_x = modelCloudWithNormals->points[i].normal[0];
+						YLmodel_normals->points[i].normal_y = modelCloudWithNormals->points[i].normal[1];
+						YLmodel_normals->points[i].normal_z = modelCloudWithNormals->points[i].normal[2];
+
+						}
+						if (modelCloudWithNormals->points[i].y <= 0)
+						{
+						PointXYZRGBA p;
+						p.x = modelCloudWithNormals->points[i].x;
+						p.y = modelCloudWithNormals->points[i].y;
+						p.z = modelCloudWithNormals->points[i].z;
+						p.r = modelCloudWithNormals->points[i].r;
+						p.g = modelCloudWithNormals->points[i].g;
+						p.b = modelCloudWithNormals->points[i].b;
+						p.a = 255;
+						XSmodelCloud->push_back(p);
+
+						Normal n;
+						n.normal_x = modelCloudWithNormals->points[i].normal_x;
+						n.normal_y = modelCloudWithNormals->points[i].normal_y;
+						n.normal_z = modelCloudWithNormals->points[i].normal_z;
+
+						XSmodel_normals->push_back(n);
+
+						}
+						if (modelCloudWithNormals->points[i].z <= 0)
+						{
+
+						ZSmodelCloud->points[i].x = modelCloudWithNormals->points[i].x;
+						ZSmodelCloud->points[i].y = modelCloudWithNormals->points[i].y;
+						ZSmodelCloud->points[i].z = modelCloudWithNormals->points[i].z;
+						ZSmodelCloud->points[i].r = modelCloudWithNormals->points[i].r;
+						ZSmodelCloud->points[i].g = modelCloudWithNormals->points[i].g;
+						ZSmodelCloud->points[i].b = modelCloudWithNormals->points[i].b;
+						ZSmodelCloud->points[i].a = 255;
+						ZSmodel_normals->points[i].normal_x = modelCloudWithNormals->points[i].normal[0];
+						ZSmodel_normals->points[i].normal_y = modelCloudWithNormals->points[i].normal[1];
+						ZSmodel_normals->points[i].normal_z = modelCloudWithNormals->points[i].normal[2];
+
+						}
+						if (modelCloudWithNormals->points[i].z > 0)
+						{
+
+						ZLmodelCloud->points[i].x = modelCloudWithNormals->points[i].x;
+						ZLmodelCloud->points[i].y = modelCloudWithNormals->points[i].y;
+						ZLmodelCloud->points[i].z = modelCloudWithNormals->points[i].z;
+						ZLmodelCloud->points[i].r = modelCloudWithNormals->points[i].r;
+						ZLmodelCloud->points[i].g = modelCloudWithNormals->points[i].g;
+						ZLmodelCloud->points[i].b = modelCloudWithNormals->points[i].b;
+						ZLmodelCloud->points[i].a = 255;
+						ZLmodel_normals->points[i].normal_x = modelCloudWithNormals->points[i].normal[0];
+						ZLmodel_normals->points[i].normal_y = modelCloudWithNormals->points[i].normal[1];
+						ZLmodel_normals->points[i].normal_z = modelCloudWithNormals->points[i].normal[2];
+
+						}*/
+
+
 					modelCloud->points[i].x = modelCloudWithNormals->points[i].x;
 					modelCloud->points[i].y = modelCloudWithNormals->points[i].y;
 					modelCloud->points[i].z = modelCloudWithNormals->points[i].z;
@@ -505,14 +815,22 @@ int main(int argc, char** argv)
 					model_normals->points[i].normal_z = modelCloudWithNormals->points[i].normal[2];
 
 				}
-				
+
+
+				if (split)
+				{
+					modelCloud = ZLmodelCloud;
+					model_normals = ZLmodel_normals;
+				}
+
+
 				cout << "Computing model " << modelName << "  normals" << endl;
 				ne.setInputCloud(modelCloud);
 				ne.compute(*model_normals);
 
 				/*for (size_t i = 0; i < modelCloud->size(); i++)
 				{
-					modelCloud->at(i).a = 255;
+				modelCloud->at(i).a = 255;
 				}*/
 
 
@@ -603,21 +921,73 @@ int main(int argc, char** argv)
 				//ne.setRadiusSearch(0.01f);
 
 
-				
+
 
 				//// b) Extract key-points from point clouds by downsampling point clouds
 				cout << "b) Extract key-points from point clouds by downsampling point clouds" << endl;
 
-
-
-				uniform_sampling.setRadiusSearch(modelSamplingRadiusSearch ); //the 3D grid leaf size
-
 				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelSampledCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
-				uniform_sampling.setInputCloud(modelCloud);
-				uniform_sampling.filter(*modelSampledCloud);
+
+				if (useISS)
+				{
+
+					//
+					// Compute keypoints
+					//
+					pcl::ISSKeypoint3D<pcl::PointXYZRGBA, pcl::PointXYZRGBA> iss_detector;
+
+					iss_detector.setSearchMethod(tree);
+
+
+					model_resolution = computeCloudResolution(modelCloud);
+
+					iss_salient_radius_ = 6 * model_resolution;
+					iss_non_max_radius_ = 4 * model_resolution;
+					/*iss_normal_radius_ = 4 * model_resolution;
+					iss_border_radius_ = 1 * model_resolution;*/
+				/*	iss_detector.setNormalRadius(iss_normal_radius_);
+					iss_detector.setBorderRadius(iss_border_radius_);*/
+					iss_detector.setSalientRadius(iss_salient_radius_);
+					iss_detector.setNonMaxRadius(iss_non_max_radius_);
+					iss_detector.setThreshold21(iss_gamma_21_);
+					iss_detector.setThreshold32(iss_gamma_32_);
+					iss_detector.setMinNeighbors(iss_min_neighbors_);
+					iss_detector.setNumberOfThreads(iss_threads_);
+					iss_detector.setInputCloud(modelCloud);
+					iss_detector.compute(*modelSampledCloud);
+
+				}
+
+				else{
+					uniform_sampling.setRadiusSearch(modelSamplingRadiusSearch); //the 3D grid leaf size
+					uniform_sampling.setInputCloud(modelCloud);
+					uniform_sampling.filter(*modelSampledCloud);
+				}
+
 
 				cout << "sampled modelSampledCloud :" + to_string(modelSampledCloud->size()) << endl;
 
+				pcl::visualization::PCLVisualizer viewer5("sampled model");
+				viewer5.addPointCloud(modelSampledCloud, "sampledmodel");
+				viewer5.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sampledmodel");
+
+				pcl::visualization::PCLVisualizer viewer6("sampled scene");
+				viewer6.addPointCloud(sceneSampledCloud, "sampledscene");
+				viewer6.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sampledscene");
+
+				//	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene");
+
+
+
+				while (!viewer5.wasStopped() && !viewer6.wasStopped())
+				{
+					viewer5.spinOnce(100);
+					viewer6.spinOnce(100);
+
+				}
+
+				viewer5.close();
+				viewer6.close();
 
 
 				//// c) Compute descriptor for keypoints
@@ -639,10 +1009,10 @@ int main(int argc, char** argv)
 
 				cout << "d) Find model-scene key-points correspondences with KdTree" << endl;
 				pcl::CorrespondencesPtr model_scene_corrs(new pcl::Correspondences());
-				pcl::KdTreeFLANN<DescriptorType> match_search;
+				pcl::KdTreeFLANN<SHOT352> match_search;
 				match_search.setInputCloud(modelDescriptors);
-				//std::vector<int> modelKPindices;
-				//std::vector<int> sceneKPindices;
+				std::vector<int> modelKPindices;
+				std::vector<int> sceneKPindices;
 
 				for (size_t i = 0; i < sceneDescriptors->size(); ++i)
 				{
@@ -655,24 +1025,32 @@ int main(int argc, char** argv)
 					}
 
 					int found_neighs = match_search.nearestKSearch(sceneDescriptors->at(i), 1, neigh_indices, neigh_sqr_dists);
-					if (found_neighs == 1 && neigh_sqr_dists[0] < 0.25f)
+					if (found_neighs == 1 && neigh_sqr_dists[0] < kdnearestDistance)
 					{
 						pcl::Correspondence corr(neigh_indices[0], static_cast<int> (i), neigh_sqr_dists[0]);
 						model_scene_corrs->push_back(corr);
-						//modelKPindices.push_back(corr.index_query);
-						//sceneKPindices.push_back(corr.index_match);
+						modelKPindices.push_back(corr.index_query);
+						sceneKPindices.push_back(corr.index_match);
 					}
 				}
-				//pcl::PointCloud<PointType>::Ptr modelKeyPoints(new pcl::PointCloud<PointType>());
-				//pcl::PointCloud<PointType>::Ptr sceneKeyPoints(new pcl::PointCloud<PointType>());
-				//pcl::copyPointCloud(*modelSampledCloudPtr, modelKPindices, *modelKeyPoints);
-				//pcl::copyPointCloud(*sceneSampledCloudPtr, sceneKPindices, *sceneKeyPoints);
+				pcl::PointCloud<PointType>::Ptr modelKeyPoints(new pcl::PointCloud<PointType>());
+				pcl::PointCloud<PointType>::Ptr sceneKeyPoints(new pcl::PointCloud<PointType>());
+				pcl::copyPointCloud(*modelSampledCloud, modelKPindices, *modelKeyPoints);
+				pcl::copyPointCloud(*sceneSampledCloud, sceneKPindices, *sceneKeyPoints);
 
 				std::cout << "model_scene_corrs: " << model_scene_corrs->size() << std::endl;
 
 
+				pcl::visualization::PCLVisualizer viewer7("visualizing correspondences");
+				viewer7.addPointCloud(originalSceneCloud, "scene");
+				//viewer7.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
+				viewer7.addPointCloud(modelCloud, "model");
+				viewer7.addCorrespondences<PointXYZRGBA>(modelCloud, sceneCloud, *model_scene_corrs);
 
-
+				while (!viewer7.wasStopped())
+				{
+					viewer7.spinOnce(100);
+				}
 				/*std::vector<pcl::Correspondence> model_scene_corrs;
 
 				pcl::KdTreeFLANN<DescriptorType> match_search;
@@ -857,7 +1235,7 @@ int main(int argc, char** argv)
 				pcl::visualization::PCLVisualizer viewer("3d viewer");
 				viewer.addPointCloud(originalSceneCloud, "scene");
 				viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
-
+				//viewer.addCorrespondences<PointXYZRGBA>(modelCloud, sceneCloud, *model_scene_corrs);
 				//viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 1, 1, "scene");
 
 				double timeTaken = (double)(((double)(clock() - tStart)) / CLOCKS_PER_SEC);
@@ -871,12 +1249,13 @@ int main(int argc, char** argv)
 				// 6D pose is written to output file
 
 
+
 				for (size_t i = 0; i < registeredModelClusteredKeyPoints.size(); i++)
 				{
+					viewer.addPointCloud(registeredModelClusteredKeyPoints[i], "instance" + to_string(i));
 
 					if (mask_hv[i])
 					{
-						viewer.addPointCloud(registeredModelClusteredKeyPoints[i], "instance" + to_string(i));
 						// output transformation matrix 
 						// TODO: find out how to compute score
 						double score = 0;
@@ -905,16 +1284,16 @@ int main(int argc, char** argv)
 						osout << "- {score: " + to_string(score) + ", R : [" + rotationValues + "], t: [" + translationValues + "]}";
 						cout << "instance" + to_string(i) + " good" << endl;
 						viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "instance" + to_string(i));
-						viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance" + to_string(i));
 
 					}
 					else
 					{
 						cout << "instance" + to_string(i) + " bad" << endl;
 
-						//	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "instance" + to_string(i));
+						viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "instance" + to_string(i));
 
 					}
+					viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance" + to_string(i));
 
 				}
 
