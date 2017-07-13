@@ -353,6 +353,7 @@ int main(int argc, char** argv)
 		else if (modelName == "bird" || modelName == "teapot" || modelName == "bond")
 		{
 			SegMentationDistanceThreshold = 0.01;
+			wallsegThreshold = 0.01;
 			sceneUniformSamplingRadius = 0.002f;
 			scenedescriberRadiusSearch = 0.02f;
 			modeldescriberRadiusSearch = 0.02f;
