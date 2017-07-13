@@ -76,8 +76,8 @@ struct recursive_directory_range
 int main(int argc, char** argv)
 {
 	std::string projectSrcDir = PROJECT_SOURCE_DIR;
-
-	//0-  loading all of the scene clouds and keeping them for testing.
+	
+	//0-  loading all (10) of the scene clouds in the testing folder and keeping them for testing.
 
 	//	std::unordered_map<std::string, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> Scenes;
 
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
 
 
 
-
+	// HOUSE PARAMETERS
 	float SegMentationDistanceThreshold = 0.01;//eating up the floor (more will eat up lots of points, less is undertuned)
 	float sceneUniformSamplingRadius = 0.002f;//for the keypoints of the scene(more will allow more points, less will remove less points)
 	float scenedescriberRadiusSearch = 0.02f;//for the describer of the scene and the model
@@ -116,7 +116,7 @@ int main(int argc, char** argv)
 	float gcClusteringThreshold = 20;//how many points in a cluster at least
 	int icpsetMaximumIterations = 50;//for the alignment with icp
 	float icpsetMaxCorrespondenceDistance = 0.05;
-	float GoHvsetInlierThreshold = 0.05f;//HV
+	float GoHvsetInlierThreshold = 0.5f;//HV
 	float GoHvsetOcclusionThreshold = 0.01;
 	int GoHvRegularizer = 3;
 	float GoHvsetRadiusClutter = 0.03;
@@ -140,6 +140,7 @@ int main(int argc, char** argv)
 		challengePath = pathIT;
 		sceneRGBDir = challengePath + "/rgb/";
 		sceneDepthDir = challengePath + "/depth/";
+
 		// create directory for team name if not yet exist
 		string teamname = "/TeamZero";
 		const char* directorypathTeamName = projectSrcDir.c_str();
@@ -158,16 +159,13 @@ int main(int argc, char** argv)
 
 		for (auto it : directory_iterator(sceneRGBDir))
 		{
-
 			string path = it.path().string();
 			boost::replace_all(path, "\\", "/");
 			string colorSceneFilepath = path;
 			string colorSceneFilename = colorSceneFilepath.substr(colorSceneFilepath.find_last_of("/") + 1);
 
-			//cout << path << endl;
 			boost::replace_all(path, "rgb", "depth");
 			string depthSceneFilepath = path;
-			//cout << path << endl;
 
 			cv::Mat depthImg = cv::imread(depthSceneFilepath, CV_LOAD_IMAGE_UNCHANGED);
 			cv::Mat colorImg = cv::imread(colorSceneFilepath, CV_LOAD_IMAGE_COLOR);
@@ -183,15 +181,14 @@ int main(int argc, char** argv)
 			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr originalSceneCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
-
-
-			// Create point clouds from depth image and color image using camera intrinsic parameters
-			// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
-			for (int j = 0; j < depthImg.cols; j += sceneLoadLoopStep)
+			// (1) Create point clouds from depth image and color image using camera intrinsic parameters.
+			// Compute 3D points from depth values and pixel locations on depth image using camera intrinsic parameters.
+			// loop through all depth pixels
+			for (int x = 0; x < depthImg.cols; x += sceneLoadLoopStep)
 			{
-				for (int i = 0; i < depthImg.rows; i += sceneLoadLoopStep)
+				for (int y = 0; y < depthImg.rows; y += sceneLoadLoopStep)
 				{
-					auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focalx, (i - py)*depthImg.at<ushort>(i, j) / focaly, depthImg.at<ushort>(i, j), 1);
+					auto point = Eigen::Vector4f((x - px)*depthImg.at<ushort>(y, x) / focalx, (y - py)*depthImg.at<ushort>(y, x) / focaly, depthImg.at<ushort>(y, x), 1);
 
 					// (2) Translate 3D point in local coordinate system to 3D point in global coordinate system using camera pose.
 					//	point = poseMat *point;
@@ -200,9 +197,9 @@ int main(int argc, char** argv)
 					p.x = point[0] / 1000.0f;
 					p.y = point[1] / 1000.0f;
 					p.z = point[2] / 1000.0f;
-					p.r = colorImg.at<cv::Vec3b>(i, j)[0];
-					p.g = colorImg.at<cv::Vec3b>(i, j)[1];
-					p.b = colorImg.at<cv::Vec3b>(i, j)[2];
+					p.r = colorImg.at<cv::Vec3b>(y, x)[0];
+					p.g = colorImg.at<cv::Vec3b>(y, x)[1];
+					p.b = colorImg.at<cv::Vec3b>(y, x)[2];
 					p.a = 255;
 					if (p.r == 0 && p.g == 0 && p.b == 0)
 					{
@@ -234,18 +231,21 @@ int main(int argc, char** argv)
 			// Optional
 			seg.setOptimizeCoefficients(true);
 			// Mandatory
-			seg.setModelType(pcl::SACMODEL_PLANE);
-			seg.setMethodType(pcl::SAC_RANSAC);
-			seg.setDistanceThreshold(SegMentationDistanceThreshold);
-			seg.setInputCloud(sceneCloud);
-			seg.segment(*inliers, *coefficients);
 
-			pcl::ExtractIndices<PointType> eifilter(true); // Initializing with true will allow us to extract the removed indices
-			eifilter.setInputCloud(sceneCloud);
-			eifilter.setIndices(inliers);
-			eifilter.setNegative(true);
-			eifilter.filterDirectly(sceneCloud);
-			
+			// remove ground
+			//seg.setModelType(pcl::SACMODEL_PLANE);
+			//seg.setMethodType(pcl::SAC_RANSAC);
+			//seg.setDistanceThreshold(SegMentationDistanceThreshold);
+			//seg.setInputCloud(sceneCloud);
+			//seg.segment(*inliers, *coefficients);
+
+			//pcl::ExtractIndices<PointType> eifilter(true); // Initializing with true will allow us to extract the removed indices
+			//eifilter.setInputCloud(sceneCloud);
+			//eifilter.setIndices(inliers);
+			//eifilter.setNegative(true);
+			//eifilter.filterDirectly(sceneCloud);
+			//
+			//// remove the wall
 			//seg.setModelType(pcl::SACMODEL_PARALLEL_PLANE);
 			//seg.setDistanceThreshold(0.01);
 			//seg.setInputCloud(sceneCloud);
@@ -256,7 +256,7 @@ int main(int argc, char** argv)
 			//eifilter.setIndices(inliers);
 			//eifilter.setNegative(true);
 			//eifilter.filterDirectly(sceneCloud);
-		//	copyPointCloud(*sceneCloud, inliers->indices, *sceneCloud);
+			//copyPointCloud(*sceneCloud, inliers->indices, *sceneCloud);
 			
 			pcl::visualization::PCLVisualizer viewer3("3d scene after segmentation");
 			viewer3.addPointCloud(sceneCloud, "scene");
