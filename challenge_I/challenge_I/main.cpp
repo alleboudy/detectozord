@@ -142,17 +142,20 @@ int main(int argc, char** argv)
 	*/
 
 
+	
+	// Cracker -only first scene
 	/*
-	Cracker -only first scene
 	float SegMentationDistanceThreshold = 0.015;//eating up the floor (more will eat up lots of points, less is undertuned)
 	float sceneUniformSamplingRadius = 0.002f;//for the keypoints of the scene(more will allow more points, less will remove less points)
 	float scenedescriberRadiusSearch = 0.02f;//for the describer of the scene and the model
 	float modelSamplingRadiusSearch = 0.008f;//keypoints of the model, larger allows more points, smaller, less points
-	float gcClusteringSize = 0.009f;//clustering size //increasing it allows more clusters
+	float gcClusteringSize = 0.007f;//clustering size //increasing it allows more clusters
 	float gcClusteringThreshold = 20;//how many points in a cluster at least
 	int icpsetMaximumIterations = 50;//for the alignment with icp
 	float icpsetMaxCorrespondenceDistance = 0.05;
+	int sceneLoadLoopStep = 2;
 
+	/*
 	//Hypothesis verrification parameters:
 	float GoHvsetInlierThreshold = 0.05f;//HV, increasing allows more correspondences to pass
 	float GoHvsetOcclusionThreshold = 0.01;
@@ -177,12 +180,13 @@ int main(int argc, char** argv)
 	//float icpsetMaxCorrespondenceDistance = 0.05;
 
 	////Hypothesis verrification parameters:
-	//float GoHvsetInlierThreshold = 0.05f;//HV, increasing allows more correspondences to pass
+	//float GoHvsetInlierThreshold = 0.05f;//HV, increasing allows more clusters/instances to pass
 	//float GoHvsetOcclusionThreshold = 0.01;
 	//int GoHvRegularizer = 3;
 	//float GoHvsetRadiusClutter = 0.03;
 	//int GoHvClutterRegularizer = 5;
 	//float GoHvRadiusNormals = 0.05f;
+
 	////downsampling the scene cloud
 	//int sceneLoadLoopStep = 1;
 	//int normalEstimationK = 10;
@@ -192,29 +196,26 @@ int main(int argc, char** argv)
 
 	bool split = false;//for taking splits of the model against the axis 
 
-
-
-
-
-	float SegMentationDistanceThreshold = 0.01;
+	float SegMentationDistanceThreshold = 0.02;
 	float wallsegThreshold = 0.01;
 	float sceneUniformSamplingRadius = 0.002f;
-	float scenedescriberRadiusSearch = 0.2f;
-	float modeldescriberRadiusSearch = 0.5f;
+	float scenedescriberRadiusSearch = 0.02f;
+	float modeldescriberRadiusSearch = 0.05f;
 	float modelSamplingRadiusSearch = 0.008f;
-	float gcClusteringSize = 0.005f;
+	float gcClusteringSize = 0.009f;
 	float gcClusteringThreshold = 20;
-	int icpsetMaximumIterations = 50;
+	int icpsetMaximumIterations = 5;
 	float icpsetMaxCorrespondenceDistance = 0.05;
+
 	float GoHvsetInlierThreshold = 0.05f;
 	float GoHvsetOcclusionThreshold = 0.01;
 	int GoHvRegularizer = 3;
 	float GoHvsetRadiusClutter = 0.03;
 	int GoHvClutterRegularizer = 5;
 	float GoHvRadiusNormals = 0.05f;
-	int sceneLoadLoopStep = 1;
-	int normalEstimationK = 10;
-	float kdnearestDistance = 0.25f;
+	int sceneLoadLoopStep = 2;
+	int normalEstimationK = 100;
+	float kdnearestDistance = 1.0f;
 
 
 
@@ -1158,7 +1159,7 @@ int main(int argc, char** argv)
 					pcl::IterativeClosestPoint<PointType, PointType> icp;
 					icp.setMaximumIterations(icpsetMaximumIterations);
 					icp.setMaxCorrespondenceDistance(icpsetMaxCorrespondenceDistance);
-					//icp.setUseReciprocalCorrespondences(true);
+					icp.setUseReciprocalCorrespondences(true);//
 					icp.setInputTarget(sceneCloud);
 					icp.setInputSource(instances[i]);
 					pcl::PointCloud<PointType>::Ptr registered(new pcl::PointCloud<PointType>);
