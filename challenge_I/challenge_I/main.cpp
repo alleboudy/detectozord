@@ -27,6 +27,8 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/segmentation/extract_polygonal_prism_data.h>
+#include <pcl/surface/convex_hull.h>
 // including boost headers
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
@@ -190,15 +192,15 @@ int main(int argc, char** argv)
 
 
 
-	bool split = false;//for taking splits of the model against the axis 
+	bool split = true;//for taking splits of the model against the axis 
 
 
 
 
-	float SegMentationDistanceThreshold = 0.01;
-	float sceneUniformSamplingRadius = 0.001f;
-	float scenedescriberRadiusSearch = 0.2f;
-	float modelSamplingRadiusSearch = 0.001f;
+	float SegMentationDistanceThreshold = 0.02;
+	float sceneUniformSamplingRadius = 0.007f;
+	float scenedescriberRadiusSearch = 0.02f;
+	float modelSamplingRadiusSearch = 0.004f;
 	float gcClusteringSize = 0.005f;
 	float gcClusteringThreshold = 20;
 	int icpsetMaximumIterations = 50;
@@ -362,16 +364,49 @@ int main(int argc, char** argv)
 			seg.setModelType(pcl::SACMODEL_PLANE);
 			seg.setMethodType(pcl::SAC_RANSAC);
 			seg.setDistanceThreshold(SegMentationDistanceThreshold);
+
 			seg.setInputCloud(sceneCloud);
 			seg.segment(*inliers, *coefficients);
-
+			
 			pcl::ExtractIndices<PointType> eifilter(true); // Initializing with true will allow us to extract the removed indices
+			eifilter.setInputCloud(sceneCloud);
+			eifilter.setIndices(inliers);
+			//eifilter.setNegative(true);
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr inlierCloud(new pcl::PointCloud<pcl::PointXYZRGBA>());
+
+			eifilter.filter(*inlierCloud);
+
+
+			double z_min = -0.5f, z_max = 0.01f; // we want the points above the plane, no farther than 5 cm from the surface
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr hull_points(new pcl::PointCloud<pcl::PointXYZRGBA>());
+			pcl::ConvexHull<pcl::PointXYZRGBA> hull;
+			// hull.setDimension (2); // not necessarily needed, but we need to check the dimensionality of the output
+			hull.setInputCloud(inlierCloud);
+			hull.reconstruct(*hull_points);
+			if (hull.getDimension() == 2)
+			{
+				pcl::ExtractPolygonalPrismData<pcl::PointXYZRGBA> prism;
+				prism.setInputCloud(sceneCloud);
+				prism.setInputPlanarHull(hull_points);
+				prism.setHeightLimits(z_min, z_max);
+				prism.segment(*inliers);
+			}
+			else
+				PCL_ERROR("The input cloud does not represent a planar surface.\n");
+
+
+
+			
+			//pcl::ExtractIndices<PointType> eifilter(true); // Initializing with true will allow us to extract the removed indices
 			eifilter.setInputCloud(sceneCloud);
 			eifilter.setIndices(inliers);
 			eifilter.setNegative(true);
 			eifilter.filterDirectly(sceneCloud);
 
-			seg.setModelType(pcl::SACMODEL_PLANE);
+			
+
+
+			/*seg.setModelType(pcl::SACMODEL_PLANE);
 			seg.setDistanceThreshold(0.1);
 			seg.setInputCloud(sceneCloud);
 			seg.segment(*inliers, *coefficients);
@@ -397,7 +432,7 @@ int main(int argc, char** argv)
 			eifilter.setNegative(true);
 			eifilter.filterDirectly(sceneCloud);
 
-
+			*/
 
 
 			pcl::visualization::PCLVisualizer viewer3("3d scene after segmentation");
