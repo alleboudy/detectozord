@@ -299,3 +299,5 @@ checkpoints/
 
 #challenge_I
 challenge_I/data
+pointnet
+utils
