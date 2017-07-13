@@ -1473,17 +1473,17 @@ int main(int argc, char** argv)
 					double score = 0;//efs[i];
 
 					string rotationValues = to_string(finalTransformations[i](0, 1))
-						+ to_string(finalTransformations[i](0, 2))
-						+ to_string(finalTransformations[i](1, 0))
-						+ to_string(finalTransformations[i](1, 1))
-						+ to_string(finalTransformations[i](1, 2))
-						+ to_string(finalTransformations[i](2, 0))
-						+ to_string(finalTransformations[i](2, 1))
-						+ to_string(finalTransformations[i](2, 2));
+						+", "+ to_string(finalTransformations[i](0, 2))
+						+", "+ to_string(finalTransformations[i](1, 0))
+						+", "+ to_string(finalTransformations[i](1, 1))
+						+", "+ to_string(finalTransformations[i](1, 2))
+						+", "+ to_string(finalTransformations[i](2, 0))
+						+", "+ to_string(finalTransformations[i](2, 1))
+						+", "+ to_string(finalTransformations[i](2, 2));
 
 					string translationValues = to_string(finalTransformations[i](0, 3))
-						+ to_string(finalTransformations[i](1, 3))
-						+ to_string(finalTransformations[i](2, 3));
+						+", "+ to_string(finalTransformations[i](1, 3))
+						+", "+ to_string(finalTransformations[i](2, 3));
 
 
 
