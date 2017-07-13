@@ -110,7 +110,7 @@ int main(int argc, char** argv)
 {
 	std::string projectSrcDir = PROJECT_SOURCE_DIR;
 
-	//0-  loading all of the scene clouds and keeping them for testing.
+	//0-  loading all (10) of the scene clouds in the testing folder and keeping them for testing.
 
 	//	std::unordered_map<std::string, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> Scenes;
 
@@ -137,7 +137,6 @@ int main(int argc, char** argv)
 	int sceneLoadLoopStep = 1;
 	int normalEstimationK=10;
 	float kdnearestDistance = 0.25f;
-
 	*/
 
 
@@ -163,7 +162,6 @@ int main(int argc, char** argv)
 	int sceneLoadLoopStep = 2;
 	int normalEstimationK=10;
 	float kdnearestDistance = 0.25f;
-
 	*/
 
 	//SHOE PARAMS, BROKEN!!!
@@ -310,8 +308,11 @@ int main(int argc, char** argv)
 
 
 
-			// Create point clouds from depth image and color image using camera intrinsic parameters
-			// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
+			// (1) Create point clouds from depth image and color image using camera intrinsic parameters.
+
+			// Compute 3D points from depth values and pixel locations on depth image using camera intrinsic parameters.
+
+			// loop through all depth pixels
 			for (int j = 0; j < depthImg.cols; j += sceneLoadLoopStep)
 			{
 				for (int i = 0; i < depthImg.rows; i += sceneLoadLoopStep)
@@ -358,7 +359,7 @@ int main(int argc, char** argv)
 			pcl::SACSegmentation<pcl::PointXYZRGBA> seg;
 			// Optional
 			seg.setOptimizeCoefficients(true);
-			// Mandatory
+			// Mandatory: remove the ground plane
 			seg.setModelType(pcl::SACMODEL_PLANE);
 			seg.setMethodType(pcl::SAC_RANSAC);
 			seg.setDistanceThreshold(SegMentationDistanceThreshold);
