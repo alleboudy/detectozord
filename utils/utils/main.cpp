@@ -108,8 +108,8 @@ bool savePointCloudsPLY(string filename, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
 int main(int argc, char* argv[])
 {
 	string projectSrcDir = PROJECT_SOURCE_DIR;
-	string dataMainPath = "C:\\Users\\ahmad\\Documents\\PLARR2017\\plarr17\\challenge_I\\data\\challenge_train\\betterTrain";
-	string outputCloudsDir = "D:\\plarr\\outputply";
+	string dataMainPath = "C:\\Users\\ahmad\\Downloads\\dataset\\train\\";
+	string outputCloudsDir = "D:\\plarr\\trainplyfiles";
 	for (auto modelsIT : directory_iterator(dataMainPath))
 	{
 		string modelPathIT = modelsIT.path().string();//path to a model folder, e.g. bird
@@ -283,9 +283,9 @@ int main(int argc, char* argv[])
 				modelCloud->points[x].b -= c2.b;
 			}
 
-			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr centroidCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
-			centroidCloud->push_back(c2);
-			savePointCloudsPLY(outputCloudsDir + "\\" + modelName + "-" + "CENTROID.ply", centroidCloud, NULL);
+		//	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr centroidCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+		//	centroidCloud->push_back(c2);
+		//	savePointCloudsPLY(outputCloudsDir + "\\" + modelName + "-" + "CENTROID.ply", centroidCloud, NULL);
 
 			pcl::PointCloud<pcl::Normal>::Ptr model_normals(new pcl::PointCloud<pcl::Normal>);
 			pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
