@@ -1,0 +1,9 @@
+1- Load each RGB image, its corresponding depth image and their provided camera parameters and rotation and translation 
+
+2- Create point clouds from depth image and color image using camera intrinsic parameters (ex. 6.2)
+
+3- Load the scene RGB image and its depth 
+
+4- foreach instance cloud in step 1 and for each corresponding scene instance cloud in step 3
+	run the pipeline of the detection ex 7.1 and report rototranslation in the required format .yml
+	https://github.com/thodan/sixd_toolkit/blob/master/doc/sixd_2017_results_format.md
