@@ -300,3 +300,8 @@ checkpoints/
 #challenge_I
 challenge_I/data
 .yml
+
+#challenge_II
+challenge_II/data
+.dll
+.exe
