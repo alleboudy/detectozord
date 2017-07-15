@@ -27,6 +27,7 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/common/centroid.h>
 // including boost headers
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
@@ -49,6 +50,7 @@
 using namespace std;
 using namespace cv;
 using namespace boost::filesystem;
+
 /**
  * @brief Saving point clouds data as ply file
  * @param [in] filename : filename for saving point clouds (the extention should be .ply)
@@ -73,9 +75,13 @@ bool savePointCloudsPLY(string filename, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
 	fout << "property float x" << endl;
 	fout << "property float y" << endl;
 	fout << "property float z" << endl;
-	fout << "property float normal_x" << endl;
-	fout << "property float normal_y" << endl;
-	fout << "property float normal_z" << endl;
+	if (normals != NULL)
+	{
+		fout << "property float normal_x" << endl;
+		fout << "property float normal_y" << endl;
+		fout << "property float normal_z" << endl;
+	}
+
 	fout << "property uchar red" << endl;
 	fout << "property uchar green" << endl;
 	fout << "property uchar blue" << endl;
@@ -83,10 +89,13 @@ bool savePointCloudsPLY(string filename, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
 	fout << "end_header" << endl;
 
 	for (int i = 0; i < pointNum; i++){
-		
-		
 
-		fout << points->at(i).x << " " << points->at(i).y << " " << points->at(i).z << " " << normals->at(i).normal_x << " " << normals->at(i).normal_y << " " << normals->at(i).normal_z << " " << static_cast<int>(points->at(i).r) << " " << static_cast<int>(points->at(i).g) << " " << static_cast<int>(points->at(i).b) << " " << 255 << endl;
+
+
+		fout << points->at(i).x << " " << points->at(i).y << " " << points->at(i).z;
+		if (normals != NULL)
+			fout << " " << normals->at(i).normal_x << " " << normals->at(i).normal_y << " " << normals->at(i).normal_z;
+		fout << " " << static_cast<int>(points->at(i).r) << " " << static_cast<int>(points->at(i).g) << " " << static_cast<int>(points->at(i).b) << " " << 255 << endl;
 	}
 
 	fout.close();
@@ -117,21 +126,21 @@ int main(int argc, char* argv[])
 		vector<vector<float>> cameraIntrinsicParamtersList;
 		while (std::getline(ifStreamInfo, line))
 		{
-		std::istringstream iss(line);
-		if (isdigit(line[0]))
-		continue;
-		unsigned first = line.find("[");
-		unsigned last = line.find("]");
-		string strNew = line.substr(first + 1, last - first - 1);
-		std::vector<float> camIntrinsicParams;
-		std::stringstream ss(strNew);
-		string i;
-		while (ss >> i)
-		{
-		boost::replace_all(i, ",", "");
-		camIntrinsicParams.push_back(atof(i.c_str()));
-		}
-		cameraIntrinsicParamtersList.push_back(camIntrinsicParams);
+			std::istringstream iss(line);
+			if (isdigit(line[0]))
+				continue;
+			unsigned first = line.find("[");
+			unsigned last = line.find("]");
+			string strNew = line.substr(first + 1, last - first - 1);
+			std::vector<float> camIntrinsicParams;
+			std::stringstream ss(strNew);
+			string i;
+			while (ss >> i)
+			{
+				boost::replace_all(i, ",", "");
+				camIntrinsicParams.push_back(atof(i.c_str()));
+			}
+			cameraIntrinsicParamtersList.push_back(camIntrinsicParams);
 		}
 		// loading rotation and transformation matrices for all models
 		vector<vector<float>> rotationValuesList;
@@ -140,35 +149,35 @@ int main(int argc, char* argv[])
 		bool processingRotationValues = true;
 		while (std::getline(ifStreamGT, line))
 		{
-		std::istringstream iss(line);
-		if (isdigit(line[0]) || boost::starts_with(line, "  obj_id:")){
-		continue;
-		}
-		unsigned first = line.find("[");
-		unsigned last = line.find("]");
-		string strNew = line.substr(first + 1, last - first - 1);
-		std::vector<float> rotationValues;
-		std::vector<float> translationValues;
-		boost::replace_all(strNew, ",", "");
+			std::istringstream iss(line);
+			if (isdigit(line[0]) || boost::starts_with(line, "  obj_id:")){
+				continue;
+			}
+			unsigned first = line.find("[");
+			unsigned last = line.find("]");
+			string strNew = line.substr(first + 1, last - first - 1);
+			std::vector<float> rotationValues;
+			std::vector<float> translationValues;
+			boost::replace_all(strNew, ",", "");
 
-		std::stringstream ss(strNew);
-		string i;
-		while (ss >> i)
-		{
-		if (processingRotationValues){
-		rotationValues.push_back(atof(i.c_str()));
-		}
-		else{
-		translationValues.push_back(atof(i.c_str()));
-		}
-		}
-		if (processingRotationValues){
-		rotationValuesList.push_back(rotationValues);
-		}
-		else{
-		translationValuesList.push_back(translationValues);
-		}
-		processingRotationValues = !processingRotationValues;
+			std::stringstream ss(strNew);
+			string i;
+			while (ss >> i)
+			{
+				if (processingRotationValues){
+					rotationValues.push_back(atof(i.c_str()));
+				}
+				else{
+					translationValues.push_back(atof(i.c_str()));
+				}
+			}
+			if (processingRotationValues){
+				rotationValuesList.push_back(rotationValues);
+			}
+			else{
+				translationValuesList.push_back(translationValues);
+			}
+			processingRotationValues = !processingRotationValues;
 		}
 
 		int i = 0;
@@ -227,13 +236,14 @@ int main(int argc, char* argv[])
 
 
 
+			pcl::CentroidPoint<pcl::PointXYZRGBA> centroid;
 
 
-			 //Create point clouds from depth image and color image using camera intrinsic parameters
+			//Create point clouds from depth image and color image using camera intrinsic parameters
 			// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
-			for (int j = 0; j < depthImg.cols; j+=1)
+			for (int j = 0; j < depthImg.cols; j += 1)
 			{
-				for (int i = 0; i < depthImg.rows; i+=1)
+				for (int i = 0; i < depthImg.rows; i += 1)
 				{
 					auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
 
@@ -241,34 +251,54 @@ int main(int argc, char* argv[])
 					point = poseMat *point;
 					// (3) Add the 3D point to vertices in point clouds data.
 					pcl::PointXYZRGBA p;
-					p.x = point[0]/1000.0f;
-					p.y = point[1]/1000.0f;
-					p.z = point[2]/1000.0f;
+					p.x = point[0] / 1000.0f;
+					p.y = point[1] / 1000.0f;
+					p.z = point[2] / 1000.0f;
 					p.r = colorImg.at<cv::Vec3b>(i, j)[0];
 					p.g = colorImg.at<cv::Vec3b>(i, j)[1];
 					p.b = colorImg.at<cv::Vec3b>(i, j)[2];
 					p.a = 255;
-					if (p.x == 0 && p.y == 0 &&p.r==0&&p.g==0&&p.b==0)
+					if (p.x == 0 && p.y == 0 && p.r == 0 && p.g == 0 && p.b == 0)
 					{
 						continue;
 					}
 					modelCloud->push_back(p);
+					centroid.add(p);
 				}
 			}
 
+
+			// Create and accumulate points
+
+
+			pcl::PointXYZRGBA c2;
+			centroid.get(c2);
+			for (size_t x = 0; x < modelCloud->size(); x++)
+			{
+				modelCloud->points[x].x -= c2.x;
+				modelCloud->points[x].y -= c2.y;
+				modelCloud->points[x].z -= c2.z;
+				modelCloud->points[x].r -= c2.r;
+				modelCloud->points[x].g -= c2.g;
+				modelCloud->points[x].b -= c2.b;
+			}
+
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr centroidCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+			centroidCloud->push_back(c2);
+			savePointCloudsPLY(outputCloudsDir + "\\" + modelName + "-" + "CENTROID.ply", centroidCloud, NULL);
 
 			pcl::PointCloud<pcl::Normal>::Ptr model_normals(new pcl::PointCloud<pcl::Normal>);
 			pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
 			ne.setKSearch(10);
 			ne.setInputCloud(modelCloud);
 			ne.compute(*model_normals);
-	
-			// Save point clouds
-			savePointCloudsPLY(outputCloudsDir + "\\" + modelName + "-" + to_string(modelIndex)+".ply", modelCloud, model_normals);
 
+			// Save point clouds
+			savePointCloudsPLY(outputCloudsDir + "\\" + modelName + "-" + to_string(modelIndex) + ".ply", modelCloud, model_normals);
+
+		}
 	}
-}
-	
+
 	return 0;
 }
 
