@@ -46,6 +46,7 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
+#include <memory>
 #include <iostream>
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -59,7 +60,48 @@ using namespace std;
 using namespace pcl;
 using namespace boost::filesystem;
 
+template<typename Out>
+void split(const std::string &s, char delim, Out result) {
+	std::stringstream ss;
+	ss.str(s);
+	std::string item;
+	while (std::getline(ss, item, delim)) {
+		*(result++) = item;
+	}
+}
 
+std::vector<std::string> split(const std::string &s, char delim) {
+	std::vector<std::string> elems;
+	split(s, delim, std::back_inserter(elems));
+	return elems;
+}
+
+std::string exec(string path2classifier, string path2plyFile, string flag, std::vector<std::string>& paths, std::vector<std::string>& labels) {
+	string cmd = "cd " + path2classifier + " & python " + path2classifier + "classify.py " + flag + " " + path2plyFile;
+	std::array<char, 128> buffer;
+	std::string result;
+	std::shared_ptr<FILE> pipe(_popen(cmd.c_str(), "r"), _pclose);
+	if (!pipe) throw std::runtime_error("popen() failed!");
+	while (!feof(pipe.get())) {
+		if (fgets(buffer.data(), 128, pipe.get()) != NULL)
+			result += buffer.data();
+	}
+	char delim = '\n';
+	vector<string>alllines;
+	alllines = split(result, delim);
+	delim = ',';
+	for (size_t i = 0; i < alllines.size(); i++)
+	{
+		vector<string>line;
+
+		line = split(alllines[i], delim);
+		paths.push_back(line[0]);
+		labels.push_back(line[1]);
+
+	}
+	return result;
+
+}
 double computeCloudResolution(const pcl::PointCloud<PointType>::ConstPtr &cloud)
 {
 	double res = 0.0;
@@ -95,6 +137,7 @@ int main(int argc, char** argv)
 {
 	std::string projectSrcDir = PROJECT_SOURCE_DIR;
 
+	
 	//0-  loading all (10) of the scene clouds in the testing folder and keeping them for testing.
 
 	//	std::unordered_map<std::string, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> Scenes;
@@ -266,7 +309,7 @@ int main(int argc, char** argv)
 	int sceneLoadLoopStep;
 	int normalEstimationK;
 	float kdnearestDistance;
-
+	bool setreciprocal = false;
 	//ISS PARAMS
 	bool useISS = false;
 	double scene_resolution;
@@ -327,6 +370,22 @@ int main(int argc, char** argv)
 
 
 		modelMainPath = path;
+
+		string path2classifier = projectSrcDir + "/pointnet/pointnet/";
+		//string path2plyFile = modelMainPath;
+		string flag = "--ply_path";
+		std::vector<std::string> paths;
+		std::vector<std::string> labels;
+		cout << "Starting Classification..." << endl;
+		string res = exec(path2classifier, modelMainPath, flag, paths, labels);
+		string fileName4trdult = modelName;
+		modelName = labels[0];
+		cout << "Classification Complete, model is: " << modelName << endl;
+		for (size_t i = 0; i < paths.size(); i++)
+		{
+			cout << labels[i] << "\t" << paths[i] << endl;
+		}
+
 		cout << "Model name:" << modelName << endl;
 		if (modelName == "shoe")
 		{
@@ -630,33 +689,33 @@ int main(int argc, char** argv)
 
 
 
-					pcl::visualization::PCLVisualizer viewer3("3d scene after segmentation");
-					viewer3.addPointCloud(sceneCloud, "scene");
-					viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
-					//	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene");
+			//		pcl::visualization::PCLVisualizer viewer3("3d scene after segmentation");
+			//		viewer3.addPointCloud(sceneCloud, "scene");
+			//		viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
+			//		//	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene");
 
 
-					pcl::visualization::PCLVisualizer viewer4("3d scene original cloud");
-					viewer4.addPointCloud(originalSceneCloud, "scene");
-					viewer4.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
-					//	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene");
+			//		pcl::visualization::PCLVisualizer viewer4("3d scene original cloud");
+			//		viewer4.addPointCloud(originalSceneCloud, "scene");
+			//		viewer4.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
+			//		//	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene");
 
 
 
-					while (!viewer3.wasStopped() && !viewer4.wasStopped())
-					{
-						viewer3.spinOnce(100);
-						viewer4.spinOnce(100);
+			//		while (!viewer3.wasStopped() && !viewer4.wasStopped())
+			//		{
+			//			viewer3.spinOnce(100);
+			//			viewer4.spinOnce(100);
 
-					}
+			//		}
 
-					//if (viewer3.wasStopped() || viewer4.wasStopped())
-			{
-				viewer3.close();
-				viewer4.close();
+			//		//if (viewer3.wasStopped() || viewer4.wasStopped())
+			//{
+			//	viewer3.close();
+			//	viewer4.close();
 
 
-			}
+			//}
 
 			cout << challengeName << " cloud size " << sceneCloud->size() << endl;
 			pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
@@ -1073,13 +1132,13 @@ int main(int argc, char** argv)
 			cout << "SCENE: " << challengeName << "  - MODEL: " << modelName << endl;
 			//std::cout << " " << it.first << ":" << it.second;
 
-			pcl::visualization::PCLVisualizer viewer2("3d viewer");
+		/*	pcl::visualization::PCLVisualizer viewer2("3d viewer");
 			viewer2.addPointCloud(modelCloud, "model");
 			viewer2.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "model");
 			while (!viewer2.wasStopped())
 			{
 				viewer2.spinOnce(100);
-			}
+			}*/
 
 
 
@@ -1175,27 +1234,27 @@ int main(int argc, char** argv)
 
 			cout << "sampled modelSampledCloud :" + to_string(modelSampledCloud->size()) << endl;
 
-			pcl::visualization::PCLVisualizer viewer5("sampled model");
-			viewer5.addPointCloud(modelSampledCloud, "sampledmodel");
-			viewer5.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sampledmodel");
+			//pcl::visualization::PCLVisualizer viewer5("sampled model");
+			//viewer5.addPointCloud(modelSampledCloud, "sampledmodel");
+			//viewer5.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sampledmodel");
 
-			pcl::visualization::PCLVisualizer viewer6("sampled scene");
-			viewer6.addPointCloud(sceneSampledCloud, "sampledscene");
-			viewer6.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sampledscene");
+			//pcl::visualization::PCLVisualizer viewer6("sampled scene");
+			//viewer6.addPointCloud(sceneSampledCloud, "sampledscene");
+			//viewer6.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sampledscene");
 
-			//	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene");
+			////	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "scene");
 
 
 
-			while (!viewer5.wasStopped() && !viewer6.wasStopped())
-			{
-				viewer5.spinOnce(100);
-				viewer6.spinOnce(100);
+			//while (!viewer5.wasStopped() && !viewer6.wasStopped())
+			//{
+			//	viewer5.spinOnce(100);
+			//	viewer6.spinOnce(100);
 
-			}
+			//}
 
-			viewer5.close();
-			viewer6.close();
+			//viewer5.close();
+			//viewer6.close();
 
 
 			//// c) Compute descriptor for keypoints
@@ -1250,16 +1309,16 @@ int main(int argc, char** argv)
 			std::cout << "model_scene_corrs: " << model_scene_corrs->size() << std::endl;
 
 
-			pcl::visualization::PCLVisualizer viewer7("visualizing correspondences");
-			viewer7.addPointCloud(originalSceneCloud, "scene");
-			//viewer7.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
-			viewer7.addPointCloud(modelCloud, "model");
-			viewer7.addCorrespondences<PointXYZRGBA>(modelCloud, sceneCloud, *model_scene_corrs);
+			//pcl::visualization::PCLVisualizer viewer7("visualizing correspondences");
+			//viewer7.addPointCloud(originalSceneCloud, "scene");
+			////viewer7.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
+			//viewer7.addPointCloud(modelCloud, "model");
+			//viewer7.addCorrespondences<PointXYZRGBA>(modelCloud, sceneCloud, *model_scene_corrs);
 
-			while (!viewer7.wasStopped())
-			{
-				viewer7.spinOnce(100);
-			}
+			//while (!viewer7.wasStopped())
+			//{
+			//	viewer7.spinOnce(100);
+			//}
 			/*std::vector<pcl::Correspondence> model_scene_corrs;
 
 			pcl::KdTreeFLANN<DescriptorType> match_search;
@@ -1317,7 +1376,7 @@ int main(int argc, char** argv)
 				pcl::IterativeClosestPoint<PointType, PointType> icp;
 				icp.setMaximumIterations(icpsetMaximumIterations);
 				icp.setMaxCorrespondenceDistance(icpsetMaxCorrespondenceDistance);
-				icp.setUseReciprocalCorrespondences(true);//
+				icp.setUseReciprocalCorrespondences(setreciprocal);//
 				icp.setInputTarget(sceneCloud);
 				icp.setInputSource(instances[i]);
 				pcl::PointCloud<PointType>::Ptr registered(new pcl::PointCloud<PointType>);
@@ -1458,19 +1517,23 @@ int main(int argc, char** argv)
 			// YY: object that is present in the image (e.g. bird)
 			// 6D pose is written to output file
 
-			string outputFileName = dirChallenge.string() + "/" + colorSceneFilename + "_" + modelName + ".yml";
+			string outputFileName = dirChallenge.string() + "/" + colorSceneFilename + "_" + fileName4trdult + ".yml";
 			boost::iostreams::stream_buffer<boost::iostreams::file_sink> buf(outputFileName);
 			std::ostream osout(&buf);
-
+			cout <<"Output File name: "<< outputFileName << endl;
 			for (size_t i = 0; i < registeredModelClusteredKeyPoints.size(); i++)
 			{
-				viewer.addPointCloud(registeredModelClusteredKeyPoints[i], "instance" + to_string(i));
 
 				if (mask_hv[i])
 				{
 					// output transformation matrix 
 					// TODO: find out how to compute score
 					double score = 0;//efs[i];
+					
+					viewer.addPointCloud(instances[i], "instanceb4reg" + to_string(i));
+					viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 0, 1, "instanceb4reg" + to_string(i));
+
+					viewer.addPointCloud(registeredModelClusteredKeyPoints[i], "instance" + to_string(i));
 
 					string rotationValues = to_string(finalTransformations[i](0, 1))
 						+", "+ to_string(finalTransformations[i](0, 2))
@@ -1499,7 +1562,7 @@ int main(int argc, char** argv)
 				{
 					cout << "instance" + to_string(i) + " bad" << endl;
 
-					viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "instance" + to_string(i));
+				//	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "instance" + to_string(i));
 
 				}
 				viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance" + to_string(i));
