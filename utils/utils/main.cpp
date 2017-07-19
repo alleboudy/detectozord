@@ -28,6 +28,8 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/common/centroid.h>
+
+#include <pcl/surface/grid_projection.h>
 // including boost headers
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
@@ -108,9 +110,90 @@ bool savePointCloudsPLY(string filename, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
 int main(int argc, char* argv[])
 {
 	string projectSrcDir = PROJECT_SOURCE_DIR;
-	string dataMainPath = "C:\\Users\\ahmad\\Downloads\\dataset\\train\\";
-	string outputCloudsDir = "D:\\plarr\\trainplyfiles";
+	string dataMainPath = "C:\\Users\\ahmad\\Downloads\\dataset\\train";
+	string outputCloudsDir = "D:\\plarr\\trainplyfiles\\";
 	for (auto modelsIT : directory_iterator(dataMainPath))
+	/*{
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+		string msg = "Couldn't read file" + modelsIT.path().string() + " \n";
+		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(modelsIT.path().string(), *modelCloud) == -1){ PCL_ERROR(msg.c_str()); return (-1); }
+		std::cout << "Loaded" << modelCloud->width * modelCloud->height << "points" << std::endl;
+	
+		float largestx = std::numeric_limits<float>::min(), largesty = std::numeric_limits<float>::min(), largestz = std::numeric_limits<float>::min();
+		float smallestx = std::numeric_limits<float>::max(), smallesty = std::numeric_limits<float>::max(), smallestz = std::numeric_limits<float>::max();
+		for (size_t x = 0; x < modelCloud->size(); x++)
+		{
+
+	
+			largestx = max(largestx, modelCloud->points[x].x);
+			largesty = max(largesty, modelCloud->points[x].y);
+			largestz = max(largestz, modelCloud->points[x].z);
+
+			smallestx = min(smallestx, modelCloud->points[x].x);
+			smallesty = min(smallesty, modelCloud->points[x].y);
+			smallestz = min(smallestz, modelCloud->points[x].z);
+			//modelCloud->points[x].r -= c2.r;
+			//modelCloud->points[x].g -= c2.g;
+			//modelCloud->points[x].b -= c2.b;
+			modelCloud->points[x].a = 255;
+		}
+
+		double scale = min((1 / (largestx - smallestx)), min(1 / (largesty - smallesty),
+			1/ (largestz-smallestz)));
+
+			
+
+		for (size_t x = 0; x < modelCloud->size(); x++)
+		{
+			modelCloud->points[x].x = (modelCloud->points[x].x - 0.5*(smallestx + largestx))*scale + 0.5;
+			modelCloud->points[x].y = (modelCloud->points[x].y - 0.5*(smallesty + largesty))*scale + 0.5;
+			modelCloud->points[x].z = (modelCloud->points[x].z - 0.5*(smallestz + largestz))*scale + 0.5;
+		}
+
+	
+
+		pcl::CentroidPoint<pcl::PointXYZRGBA> centroid;
+		pcl::PointXYZRGBA c2;
+		for (size_t i = 0; i < modelCloud->size(); i++)
+		{
+			centroid.add(modelCloud->points[i]);
+		}
+		centroid.get(c2);
+		for (size_t x = 0; x < modelCloud->size(); x++)
+		{
+
+			modelCloud->points[x].x -= c2.x;
+			modelCloud->points[x].y -= c2.y;
+			modelCloud->points[x].z -= c2.z;
+
+
+			//modelCloud->points[x].r -= c2.r;
+			//modelCloud->points[x].g -= c2.g;
+			//modelCloud->points[x].b -= c2.b;
+			modelCloud->points[x].a = 255;
+		}
+
+
+
+		pcl::PointCloud<pcl::Normal>::Ptr model_normals(new pcl::PointCloud<pcl::Normal>);
+		pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
+		ne.setKSearch(100);
+		ne.setInputCloud(modelCloud);
+		ne.compute(*model_normals);
+
+
+		string path = modelsIT.path().string();
+		boost::replace_all(path, "\\", "/");
+
+
+
+
+		string modelName = path.substr(path.find_last_of("/") + 1);
+		savePointCloudsPLY(outputCloudsDir + "\\" + modelName, modelCloud, model_normals);
+		cout << "Saved: " << modelName << endl;
+
+
+	}*/
 	{
 		string modelPathIT = modelsIT.path().string();//path to a model folder, e.g. bird
 		boost::replace_all(modelPathIT, "\\", "/");
@@ -228,6 +311,7 @@ int main(int argc, char* argv[])
 
 			// Setting camera intrinsic parameters of depth camera
 			float focal = camIntrinsicParams[0];  // focal length
+
 			float px = camIntrinsicParams[2]; // principal point x
 			float py = camIntrinsicParams[5]; // principal point y
 
@@ -236,7 +320,7 @@ int main(int argc, char* argv[])
 
 
 
-			pcl::CentroidPoint<pcl::PointXYZRGBA> centroid;
+		//	pcl::CentroidPoint<pcl::PointXYZRGBA> centroid;
 
 
 			//Create point clouds from depth image and color image using camera intrinsic parameters
@@ -263,15 +347,69 @@ int main(int argc, char* argv[])
 						continue;
 					}
 					modelCloud->push_back(p);
-					centroid.add(p);
+				//	centroid.add(p);
 				}
 			}
 
+		/*	pcl::PointCloud<pcl::Normal>::Ptr model_normals(new pcl::PointCloud<pcl::Normal>);
+			pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
+			ne.setKSearch(2);
+			ne.setInputCloud(modelCloud);
+			ne.compute(*model_normals);
+			*/
 
 			// Create and accumulate points
 
 
+			float largestx = -std::numeric_limits<float>::max(), largesty = -std::numeric_limits<float>::max(), largestz = -std::numeric_limits<float>::max();
+			float smallestx = std::numeric_limits<float>::max(), smallesty = std::numeric_limits<float>::max(), smallestz = std::numeric_limits<float>::max();
+			for (size_t x = 0; x < modelCloud->size(); x++)
+			{
+
+
+				largestx = max(largestx, modelCloud->points[x].x);
+				largesty = max(largesty, modelCloud->points[x].y);
+				largestz = max(largestz, modelCloud->points[x].z);
+
+				smallestx = min(smallestx, modelCloud->points[x].x);
+				smallesty = min(smallesty, modelCloud->points[x].y);
+				smallestz = min(smallestz, modelCloud->points[x].z);
+				//modelCloud->points[x].r -= c2.r;
+				//modelCloud->points[x].g -= c2.g;
+				//modelCloud->points[x].b -= c2.b;
+			}
+
+			double scale = min((1 / (largestx - smallestx)), min(1 / (largesty - smallesty),
+				1 / (largestz - smallestz)));
+
+
+
+			pcl::CentroidPoint<pcl::PointXYZRGBA> centroid;
 			pcl::PointXYZRGBA c2;
+			for (size_t x = 0; x < modelCloud->size(); x++)
+			{
+				modelCloud->points[x].x = (modelCloud->points[x].x - 0.5*(smallestx + largestx))*scale + 0.5;
+				modelCloud->points[x].y = (modelCloud->points[x].y - 0.5*(smallesty + largesty))*scale + 0.5;
+				modelCloud->points[x].z = (modelCloud->points[x].z - 0.5*(smallestz + largestz))*scale + 0.5;
+				centroid.add(modelCloud->points[x]);
+
+			}
+
+			centroid.get(c2);
+			for (size_t x = 0; x < modelCloud->size(); x++)
+			{
+
+				modelCloud->points[x].x -= c2.x;
+				modelCloud->points[x].y -= c2.y;
+				modelCloud->points[x].z -= c2.z;
+
+			
+			}
+
+
+
+
+		/*	pcl::PointXYZRGBA c2;
 			centroid.get(c2);
 			for (size_t x = 0; x < modelCloud->size(); x++)
 			{
@@ -281,20 +419,15 @@ int main(int argc, char* argv[])
 				modelCloud->points[x].r -= c2.r;
 				modelCloud->points[x].g -= c2.g;
 				modelCloud->points[x].b -= c2.b;
-			}
+			}*/
 
 		//	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr centroidCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 		//	centroidCloud->push_back(c2);
 		//	savePointCloudsPLY(outputCloudsDir + "\\" + modelName + "-" + "CENTROID.ply", centroidCloud, NULL);
 
-			pcl::PointCloud<pcl::Normal>::Ptr model_normals(new pcl::PointCloud<pcl::Normal>);
-			pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
-			ne.setKSearch(10);
-			ne.setInputCloud(modelCloud);
-			ne.compute(*model_normals);
-
+			
 			// Save point clouds
-			savePointCloudsPLY(outputCloudsDir + "\\" + modelName + "-" + to_string(modelIndex) + ".ply", modelCloud, model_normals);
+			savePointCloudsPLY(outputCloudsDir + "\\" + modelName + "-" + to_string(modelIndex) + ".ply", modelCloud, NULL);
 
 		}
 	}
