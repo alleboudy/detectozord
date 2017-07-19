@@ -300,8 +300,13 @@ checkpoints/
 #challenge_I
 challenge_I/data
 .yml
+challenge_I/Team7_output
+challenge_I/Team7
 
 #challenge_II
 challenge_II/data
 .dll
 .exe
+utils/trainplyfiles/
+utils/data/
+utils/bin/
