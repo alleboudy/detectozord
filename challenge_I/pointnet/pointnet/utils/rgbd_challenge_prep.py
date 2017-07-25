@@ -7,7 +7,7 @@ from os import listdir
 from os.path import isfile, join
 
 
-mainplyDir='D:\\plarr\\trainplyfiles'
+mainplyDir='D:\\plarr\\train2'
 plyfiles2load=[f for f in listdir(mainplyDir) if isfile(join(mainplyDir, f))]
 #['bird-.ply','bond-.ply','can-.ply','cracker-.ply','shoe-.ply','teapot-.ply']
 outputh5FilePath='C:\\Users\\ahmad\\Desktop\\pointnetchallengedata\\RGBDtrain.h5'
@@ -41,18 +41,21 @@ def load_ply_data(filename):
         pcnxyz_array=[]
         sampled_pcxyz_array=[]
         sampled_pcnxyz_array=[]
-        for x,y,z,_nx,_ny,_nz,_r,_g,_b,_a in pc:
+        for w in pc:
+            x=w[0]
+            y=w[1]
+            z=w[2]
             pcxyz_array.append([x, y, z])
-            pcnxyz_array.append([_nx,_ny,_nz])
+            #pcnxyz_array.append([_nx,_ny,_nz])
         indices = list(range(len(pcxyz_array)))
         indicessampled= np.random.choice(indices, size=2048)
         for i in indicessampled:
             sampled_pcxyz_array.append(pcxyz_array[i])
-            sampled_pcnxyz_array.append(pcnxyz_array[i])
+           # sampled_pcnxyz_array.append(pcnxyz_array[i])
 
-        return np.asarray(sampled_pcxyz_array),np.asarray(sampled_pcnxyz_array)
+        return np.asarray(sampled_pcxyz_array),np.zeros_like(sampled_pcxyz_array)
     except :
-        pass
+        print('err loading file')
 
 
 
@@ -72,6 +75,7 @@ for plyFile in plyfiles2load:
         allnormals.append(plynxyz)
         alllabels.append(np.asarray([labelsMap[plyFile.split('-')[0]]]))
     except:
+        print('err loading file')
         continue
 
 
