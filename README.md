@@ -1,3 +1,9 @@
+Point net work is being done here ->
+https://github.com/alleboudy/pointnet
+Classification
+OneVsAllClassification
+pose regresssion
+
 #Challenge 1 notes - UPDATED:
 Unfortunately, we haven't finished the classifier yet
 
