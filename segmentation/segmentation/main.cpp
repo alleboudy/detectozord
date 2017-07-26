@@ -15,6 +15,8 @@
 #include <pcl/surface/on_nurbs/fitting_surface_tdm.h>
 #include <pcl/surface/on_nurbs/fitting_curve_2d_asdm.h>
 #include <pcl/surface/on_nurbs/triangulation.h>
+#include <pcl/segmentation/extract_polygonal_prism_data.h>
+#include <pcl/surface/convex_hull.h>
 // including opencv2 headers
 #include <opencv2/imgproc.hpp>
 #include "opencv2/opencv.hpp"
@@ -24,9 +26,82 @@
 #include <pcl/io/vtk_io.h>
 #include <pcl/features/normal_3d_omp.h>
 #include <pcl/filters/uniform_sampling.h>
+
+
+#include <OpenNI.h>
+#include <PS1080.h>
+#include<cmath>
+#include <Eigen/Dense>
+
+
 using namespace std;
 using namespace cv;
 using namespace boost::filesystem;
+using namespace openni;
+
+template<typename Out>
+void split(const std::string &s, char delim, Out result) {
+	std::stringstream ss;
+	ss.str(s);
+	std::string item;
+	while (std::getline(ss, item, delim)) {
+		*(result++) = item;
+	}
+}
+
+std::vector<std::string> split(const std::string &s, char delim) {
+	std::vector<std::string> elems;
+	split(s, delim, std::back_inserter(elems));
+	return elems;
+}
+
+std::string exec(string path2classifier, string path2plyFile, string flag, std::vector<std::string>& paths, std::vector<std::string>& labels) {
+	string cmd = "cd " + path2classifier + " & python " + path2classifier + "classify.py " + flag + " " + path2plyFile;
+	std::array<char, 128> buffer;
+	std::string result;
+	std::shared_ptr<FILE> pipe(_popen(cmd.c_str(), "r"), _pclose);
+	if (!pipe) throw std::runtime_error("popen() failed!");
+	while (!feof(pipe.get())) {
+		if (fgets(buffer.data(), 128, pipe.get()) != NULL)
+			result += buffer.data();
+	}
+	char delim = '\n';
+	vector<string>alllines;
+	alllines = split(result, delim);
+	delim = ',';
+	for (size_t i = 0; i < alllines.size(); i++)
+	{
+		vector<string>line;
+
+		line = split(alllines[i], delim);
+		paths.push_back(line[0]);
+		labels.push_back(line[1]);
+
+	}
+	return result;
+
+}
+
+// Convert to colored depth image
+cv::Mat convColoredDepth(cv::Mat& depthImg, float minThresh = 0, float maxThresh = 0){
+	cv::Mat coloredDepth = depthImg.clone();
+
+	double min;
+	double max;
+	if (minThresh == 0 && maxThresh == 0){
+		cv::minMaxIdx(depthImg, &min, &max);
+	}
+	else{
+		min = minThresh;
+		max = maxThresh;
+	}
+	coloredDepth -= min;
+	cv::convertScaleAbs(coloredDepth, coloredDepth, 255 / (max - min));
+	cv::applyColorMap(coloredDepth, coloredDepth, cv::COLORMAP_JET);
+
+	return coloredDepth;
+}
+
 
 bool savePointCloudsPLY(string filename, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr points, pcl::PointCloud<pcl::Normal>::Ptr normals)
 {
@@ -75,181 +150,456 @@ bool savePointCloudsPLY(string filename, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
 int
 main(int argc, char** argv)
 {
+	string locationForOutputClouds = "C:/Users/ahmad/Documents/locationforclouds/";
 	// Read in the cloud data
+	std::string projectSrcDir = PROJECT_SOURCE_DIR;
 
+	string path2classifier = "C:/Users/ahmad/Documents/pointnet/pointnet/";
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGBA>), cloud_f(new pcl::PointCloud<pcl::PointXYZRGBA>);
-	string msg = "Couldn't read file C:\\Users\\ahmad\\Downloads\\challenge2_val\\scenesClouds\\05-0.ply \n";
-	if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>("C:\\Users\\ahmad\\Desktop\\testscenes\\challenge1_1-4.ply", *cloud) == -1){ PCL_ERROR(msg.c_str()); return (-1); }
+	/*string msg = "Couldn't read file C:\\Users\\ahmad\\Downloads\\challenge2_val\\scenesClouds\\05-0.ply \n";
+	if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>("C:\\Users\\ahmad\\Desktop\\testscenes\\challenge1_5-1.ply", *cloud) == -1){ PCL_ERROR(msg.c_str()); return (-1); }
 	std::cout << "Loaded" << cloud->width * cloud->height << "points" << std::endl;
+
+	*/
+
+
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
-	// Create the filtering object: downsample the dataset using a leaf size of 1cm
-	/*pcl::VoxelGrid<pcl::PointXYZRGBA> vg;
-	vg.setInputCloud(cloud);
-	vg.setLeafSize(0.0009f, 0.0009f, 0.0009f);
-	vg.filter(*cloud_filtered);
-	*/
-	pcl::UniformSampling<pcl::PointXYZRGBA> uniform_sampling;
-	uniform_sampling.setInputCloud(cloud);
-	uniform_sampling.setRadiusSearch(0.001);
-	uniform_sampling.filter(*cloud_filtered);
 
 
-	std::cout << "PointCloud after filtering has: " << cloud_filtered->points.size() << " data points." << std::endl; //*
 
-	// Create the segmentation object for the planar model and set all the parameters
-	pcl::SACSegmentation<pcl::PointXYZRGBA> seg;
-	pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
-	pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
-	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_plane(new pcl::PointCloud<pcl::PointXYZRGBA>());
-	pcl::PCDWriter writer;
-	seg.setOptimizeCoefficients(true);
-	seg.setModelType(pcl::SACMODEL_PLANE);
-	seg.setMethodType(pcl::SAC_RANSAC);
-	seg.setMaxIterations(100);
-	seg.setDistanceThreshold(0.02);
 
-	int i = 0, nr_points = (int)cloud_filtered->points.size();
-	while (cloud_filtered->points.size() > 0.3 * nr_points)
-	{
-		// Segment the largest planar component from the remaining cloud
-		seg.setInputCloud(cloud_filtered);
-		seg.segment(*inliers, *coefficients);
-		if (inliers->indices.size() == 0)
-		{
-			std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
-			break;
-		}
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr originalSceneCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
-		// Extract the planar inliers from the input cloud
-		pcl::ExtractIndices<pcl::PointXYZRGBA> extract;
-		extract.setInputCloud(cloud_filtered);
-		extract.setIndices(inliers);
-		extract.setNegative(false);
 
-		// Get the points associated with the planar surface
-		extract.filter(*cloud_plane);
-		std::cout << "PointCloud representing the planar component: " << cloud_plane->points.size() << " data points." << std::endl;
 
-		// Remove the planar inliers, extract the rest
-		extract.setNegative(true);
-		extract.filter(*cloud_f);
-		*cloud_filtered = *cloud_f;
-	}
-
-	// Creating the KdTree object for the search method of the extraction
-	pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGBA>);
-	tree->setInputCloud(cloud_filtered);
-
-	std::vector<pcl::PointIndices> cluster_indices;
-	pcl::EuclideanClusterExtraction<pcl::PointXYZRGBA> ec;
-	ec.setClusterTolerance(0.02); // 2cm
-	ec.setMinClusterSize(100);
-	ec.setMaxClusterSize(25000);
 	
-	ec.setSearchMethod(tree);
-	ec.setInputCloud(cloud_filtered);
-	ec.extract(cluster_indices);
-
-	int j = 0;
-	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
+	
+	int WIDTH = 640, HEIGHT = 480;
+	////
+	// Initialize OpenNI video capture
+	openni::Status status;
+	status = OpenNI::initialize();
+	if (status != openni::STATUS_OK)
 	{
-		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGBA>);
-		for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit)
-			cloud_cluster->points.push_back(cloud_filtered->points[*pit]); //*
-		cloud_cluster->width = cloud_cluster->points.size();
-		cloud_cluster->height = 1;
-		cloud_cluster->is_dense = true;
+		std::cout << "Error initializing!" << std::endl;
+		std::cout << status << std::endl;
+		std::cout << OpenNI::getExtendedError() << std::endl;
 
-		std::cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size() << " data points." << std::endl;
-		std::stringstream ss;
-		ss << "cloud_cluster_" << j << ".pcd";
-		pcl::visualization::PCLVisualizer viewer3("clustered instances");
+	}
+	Device niDevice;
+	status = niDevice.open(ANY_DEVICE);
+	if (status != openni::STATUS_OK)
+	{
+		std::cout << "Error opening device!" << std::endl;
+		std::cout << status << std::endl;
+	}
+	VideoMode cameraMode;
+	cameraMode.setResolution(WIDTH, HEIGHT);
+	cameraMode.setFps(30);
+	// Create depth camera stream
+	VideoStream niDepthStream;
+	niDepthStream.create(niDevice, SENSOR_DEPTH);
+	niDepthStream.setVideoMode(cameraMode);
+	niDepthStream.start();
+	// Create color camera stream
+	VideoStream niColorStream;
+	niColorStream.create(niDevice, SENSOR_COLOR);
+	//niColorStream.setVideoMode(cameraMode);
+	niColorStream.start();
 
-		//densifying the clouds
+	////
+	// Set flag for synchronization between color camera and depth camera
+	niDevice.setDepthColorSyncEnabled(true);
+	// Set flag for registration between color camera and depth camera
+	niDevice.setImageRegistrationMode(IMAGE_REGISTRATION_DEPTH_TO_COLOR);
 
-		
+	////
+	// Get focal length of IR camera in mm for VGA resolution
+	double pixelSize = 0;
+	niDepthStream.getProperty<double>(XN_STREAM_PROPERTY_ZERO_PLANE_PIXEL_SIZE, &pixelSize);
+	// Convert focal length from mm -> pixels (valid for 640x480)
+	pixelSize *= 2.0; // in mm, valid for VGA resolution
+	int zeroPlaneDistance; // focal in mm
+	niDepthStream.getProperty(XN_STREAM_PROPERTY_ZERO_PLANE_DISTANCE, &zeroPlaneDistance);
+	double depthFocalLength_VGA = zeroPlaneDistance / pixelSize;
 
-		pcl::MovingLeastSquares<pcl::PointXYZRGBA, pcl::PointXYZRGBA> mls;
-		mls.setInputCloud(cloud_cluster);
-		mls.setSearchRadius(0.03);
-		mls.setPolynomialFit(true);
-		mls.setPolynomialOrder(2);
-		mls.setUpsamplingMethod(pcl::MovingLeastSquares<pcl::PointXYZRGBA, pcl::PointXYZRGBA>::SAMPLE_LOCAL_PLANE);
-		mls.setUpsamplingRadius(0.01);// has 2 be larger than setUpsamplingStepSize
-		mls.setUpsamplingStepSize(0.008);//smaller increases the generated points
-		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_smoothed(new pcl::PointCloud<pcl::PointXYZRGBA>());
-		mls.process(*cloud_smoothed);
-		cout << "upsampled cloud" << cloud_smoothed->size() << endl;
-		/*pcl::NormalEstimationOMP<pcl::PointXYZRGBA, pcl::Normal> ne;
-		ne.setNumberOfThreads(8);
-		ne.setInputCloud(cloud_smoothed);
-		ne.setRadiusSearch(0.01);
-		Eigen::Vector4f centroid;
-		compute3DCentroid(*cloud_smoothed, centroid);
-		ne.setViewPoint(centroid[0], centroid[1], centroid[2]);
-		pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>());
-		ne.compute(*cloud_normals);
-		for (size_t i = 0; i < cloud_normals->size(); ++i)
-		{
-			cloud_normals->points[i].normal_x *= -1;
-			cloud_normals->points[i].normal_y *= -1;
-			cloud_normals->points[i].normal_z *= -1;
+
+
+	float minRange = 0;
+	float maxRange = 4000;
+	VideoFrameRef niDepth, niColor;
+	int nCols = niDepthStream.getVideoMode().getResolutionX();
+	int nRows = niDepthStream.getVideoMode().getResolutionY();
+	// compute principal points (just image size / 2)
+
+	float px = nCols / 2.;
+	float py = nRows / 2.;
+	// Start loop
+	cv::Mat depthImage, matDepth16U;
+
+	vector<Mat> hundredDepths; // a buffer of 100 depth frames that we use to compute the std and mean of the depthstream 
+	////
+	while (true){
+		// Grab depth image
+		niDepthStream.readFrame(&niDepth);
+		if (niDepth.isValid()) {
+			matDepth16U = cv::Mat(nRows, nCols, CV_16UC1, (char*)niDepth.getData());
+			matDepth16U.convertTo(depthImage, CV_32FC1);
+			cv::flip(depthImage, depthImage, 1);
+
+			if (hundredDepths.size() == 100)
+			{
+				hundredDepths.erase(hundredDepths.begin());
+			}
+
+			if (hundredDepths.size() < 100)
+			{
+				hundredDepths.push_back(depthImage.clone());
+			}
+
+
 		}
-		pcl::PointCloud<pcl::PointNormal>::Ptr cloud_smoothed_normals(new pcl::PointCloud<pcl::PointNormal>());
-		concatenateFields(*cloud_smoothed, *cloud_normals, *cloud_smoothed_normals);
-*/
-		/*
-	pcl::Poisson<pcl::PointNormal> poisson;
-		poisson.setDepth(9);
-		poisson.setInputCloud
-			(cloud_smoothed_normals);
-		pcl::PolygonMesh mesh;
-		poisson.reconstruct(mesh);
-		*/
-		//float step = 0.1f;
-		/*for (size_t z = 0; z < cloud_cluster->size(); z++)
+		cv::Mat colorImage;
+
+		niColorStream.readFrame(&niColor);
+		if (niColor.isValid()) {
+			colorImage = cv::Mat(nRows, nCols, CV_8UC3, (char*)niColor.getData());
+			cv::flip(colorImage, colorImage, 1);
+		}
+
+		// Show images
+
+		//cv::imwrite("depthImage.png", convColoredDepth(depthImage, minRange, maxRange));
+
+
+
+		//DepthImg2PointCloud(matDepth16U, colorImage, vertices, colors, depthFocalLength_VGA, px, py);
+
+		for (int j = 0; j < matDepth16U.cols; j++)
 		{
+			for (int i = 0; i < matDepth16U.rows; i++)
+			{
+				auto point = Eigen::Vector4f((j - px)*matDepth16U.at<ushort>(i, j) / depthFocalLength_VGA, (i - py)*matDepth16U.at<ushort>(i, j) / depthFocalLength_VGA, matDepth16U.at<ushort>(i, j), 1);
+				//auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focalx, (i - py)*depthImg.at<ushort>(i, j) / focaly, depthImg.at<ushort>(i, j), 1);
 
-		dense_cloud_cluster->push_back(cloud_cluster->points[z]);
-		pcl::PointXYZRGBA newPoint;
-		newPoint.r = cloud_cluster->points[z].r;
-		newPoint.g = cloud_cluster->points[z].g;
-		newPoint.b = cloud_cluster->points[z].b;
-		newPoint.a = 255;
+				pcl::PointXYZRGBA p;
+				p.x = point[0] / 1000.0f;;
+				p.y = point[1] / 1000.0f;;
+				p.z = point[2] / 1000.0f;;
+				p.r = colorImage.at<Vec3b>(i, j)[0];
+				p.g = colorImage.at<Vec3b>(i, j)[1];
+				p.b = colorImage.at<Vec3b>(i, j)[2];
+				p.a = 255;
+				if (p.r == 0 && p.g == 0 && p.b == 0)
+				{
+					continue;
+				}
+				cloud->push_back(p);
+				/*	// (3) Add the 3D point to vertices in point clouds data.
+					vertices.push_back(point);
+					// (4) Also compute the color of 3D point and add it to colors in point clouds data.
+					colors.push_back(colorImage.at<Vec3b>(i, j));*/
 
-
-		newPoint.x = cloud_cluster->points[z].x + cloud_cluster->points[z].x*step;
-		newPoint.y = cloud_cluster->points[z].y;
-		newPoint.z = cloud_cluster->points[z].z;
-		dense_cloud_cluster->push_back(newPoint);
-		newPoint.y = cloud_cluster->points[z].y + cloud_cluster->points[z].y*step;
-		newPoint.x = cloud_cluster->points[z].x;
-		newPoint.z = cloud_cluster->points[z].z;
-		dense_cloud_cluster->push_back(newPoint);
-		newPoint.z = cloud_cluster->points[z].z + cloud_cluster->points[z].z*step;
-		newPoint.x = cloud_cluster->points[z].x;
-		newPoint.y = cloud_cluster->points[z].y;
-		dense_cloud_cluster->push_back(newPoint);
-
-
-		}*/
-
-		viewer3.addPointCloud(cloud_smoothed, "instance");
-		viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance");
+			}
+		}
 
 
-		while (!viewer3.wasStopped() /*&& !viewer4.wasStopped()*/)
+
+
+
+
+
+
+
+
+
+
+		pcl::copyPointCloud(*cloud, *originalSceneCloud);
+
+
+		pcl::visualization::PCLVisualizer viewer3("clustered instances");
+		viewer3.addPointCloud(originalSceneCloud, "scene");
+
+		while (!viewer3.wasStopped())
 		{
 			viewer3.spinOnce(100);
 			//		viewer4.spinOnce(100);
 
 		}
-		savePointCloudsPLY("cloud_cluster_" + to_string(j) + ".ply", cloud_smoothed, NULL);
-		j++;
-	}
 
+
+
+		// Create the filtering object: downsample the dataset using a leaf size of 1cm
+		//pcl::VoxelGrid<pcl::PointXYZRGBA> vg;
+		//vg.setInputCloud(cloud);
+		//vg.setLeafSize(0.0009f, 0.0009f, 0.0009f);
+		//vg.filter(*cloud_filtered);
+
+		pcl::UniformSampling<pcl::PointXYZRGBA> uniform_sampling;
+		uniform_sampling.setInputCloud(cloud);
+		uniform_sampling.setRadiusSearch(0.001);
+		uniform_sampling.filter(*cloud_filtered);
+
+
+		std::cout << "PointCloud after filtering has: " << cloud_filtered->points.size() << " data points." << std::endl; //*
+
+		// Create the segmentation object for the planar model and set all the parameters
+		pcl::SACSegmentation<pcl::PointXYZRGBA> seg;
+		pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+		pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_plane(new pcl::PointCloud<pcl::PointXYZRGBA>());
+		pcl::PCDWriter writer;
+		seg.setOptimizeCoefficients(true);
+		seg.setModelType(pcl::SACMODEL_PLANE);
+		seg.setMethodType(pcl::SAC_RANSAC);
+		seg.setMaxIterations(100);
+		seg.setDistanceThreshold(0.02);
+
+		int i = 0, nr_points = (int)cloud_filtered->points.size();
+		int prevSize = 0;
+		int repeatCounter = 5;
+		while (cloud_filtered->points.size() > 0.3 * nr_points)
+		{
+			// Segment the largest planar component from the remaining cloud
+			seg.setInputCloud(cloud_filtered);
+			seg.segment(*inliers, *coefficients);
+			if (inliers->indices.size() == 0)
+			{
+				std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
+				break;
+			}
+
+			// Extract the planar inliers from the input cloud
+			pcl::ExtractIndices<pcl::PointXYZRGBA> extract;
+			extract.setInputCloud(cloud_filtered);
+			extract.setIndices(inliers);
+			extract.setNegative(false);
+
+			// Get the points associated with the planar surface
+			extract.filter(*cloud_plane);
+			std::cout << "PointCloud representing the planar component: " << cloud_plane->points.size() << " data points." << std::endl;
+			if (prevSize == cloud_plane->points.size())
+			{
+				repeatCounter--;
+			}
+			else
+			{
+				prevSize = cloud_plane->points.size();
+
+			}
+			// Remove the planar inliers, extract the rest
+			if (repeatCounter != 0)
+			{
+
+
+				double z_min = -1.f, z_max = 0;
+
+				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr hull_points(new pcl::PointCloud<pcl::PointXYZRGBA>());
+				pcl::ConvexHull<pcl::PointXYZRGBA> hull;
+				// hull.setDimension (2); // not necessarily needed, but we need to check the dimensionality of the output
+				hull.setInputCloud(cloud_plane);
+				hull.reconstruct(*hull_points);
+
+				if (hull.getDimension() == 2)
+				{
+					cout << "using prism to remove outlier" << endl;
+					pcl::ExtractPolygonalPrismData<pcl::PointXYZRGBA> prism;
+					prism.setInputCloud(cloud_filtered);
+					prism.setInputPlanarHull(hull_points);
+					prism.setHeightLimits(z_min, z_max);
+
+					prism.segment(*inliers);
+				}
+				else
+					PCL_ERROR("The input cloud does not represent a planar surface.\n");
+
+
+			}
+
+
+			extract.setIndices(inliers);
+
+			extract.setNegative(true);
+			extract.filter(*cloud_f);
+			*cloud_filtered = *cloud_f;
+			if (repeatCounter == 0)
+			{
+				repeatCounter = 5;
+			}
+		}
+
+		// Creating the KdTree object for the search method of the extraction
+		pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGBA>);
+		tree->setInputCloud(cloud_filtered);
+
+		std::vector<pcl::PointIndices> cluster_indices;
+		pcl::EuclideanClusterExtraction<pcl::PointXYZRGBA> ec;
+		ec.setClusterTolerance(0.02); // 2cm
+		ec.setMinClusterSize(100);
+		ec.setMaxClusterSize(25000);
+
+		ec.setSearchMethod(tree);
+		ec.setInputCloud(cloud_filtered);
+		ec.extract(cluster_indices);
+
+		int j = 0;
+		vector<	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> finalClouds;// (new pcl::PointCloud<pcl::PointXYZRGBA>);
+		
+		for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
+		{
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGBA>);
+			for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit)
+				cloud_cluster->points.push_back(cloud_filtered->points[*pit]); //*
+			cloud_cluster->width = cloud_cluster->points.size();
+			cloud_cluster->height = 1;
+			cloud_cluster->is_dense = true;
+
+			std::cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size() << " data points." << std::endl;
+			std::stringstream ss;
+			ss << "cloud_cluster_" << j << ".pcd";
+			if (cloud_cluster->size() < 500)
+			{
+				continue;
+			}
+
+			//densifying the clouds
+
+			if (cloud_cluster->size() < 2048)
+			{
+
+
+
+				pcl::MovingLeastSquares<pcl::PointXYZRGBA, pcl::PointXYZRGBA> mls;
+				mls.setInputCloud(cloud_cluster);
+				mls.setSearchRadius(0.03);
+				mls.setPolynomialFit(true);
+				mls.setPolynomialOrder(2);
+				mls.setUpsamplingMethod(pcl::MovingLeastSquares<pcl::PointXYZRGBA, pcl::PointXYZRGBA>::SAMPLE_LOCAL_PLANE);
+				mls.setUpsamplingRadius(0.01);// has 2 be larger than setUpsamplingStepSize
+				mls.setUpsamplingStepSize(0.008);//smaller increases the generated points
+				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_smoothed(new pcl::PointCloud<pcl::PointXYZRGBA>());
+				mls.process(*cloud_cluster);
+				cout << "upsampled cloud" << cloud_cluster->size() << endl;
+			}
+			if (cloud_cluster->size() == 0)
+			{
+				continue;
+			}
+
+			/*pcl::NormalEstimationOMP<pcl::PointXYZRGBA, pcl::Normal> ne;
+			ne.setNumberOfThreads(8);
+			ne.setInputCloud(cloud_smoothed);
+			ne.setRadiusSearch(0.01);
+			Eigen::Vector4f centroid;
+			compute3DCentroid(*cloud_smoothed, centroid);
+			ne.setViewPoint(centroid[0], centroid[1], centroid[2]);
+			pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>());
+			ne.compute(*cloud_normals);
+			for (size_t i = 0; i < cloud_normals->size(); ++i)
+			{
+			cloud_normals->points[i].normal_x *= -1;
+			cloud_normals->points[i].normal_y *= -1;
+			cloud_normals->points[i].normal_z *= -1;
+			}
+			pcl::PointCloud<pcl::PointNormal>::Ptr cloud_smoothed_normals(new pcl::PointCloud<pcl::PointNormal>());
+			concatenateFields(*cloud_smoothed, *cloud_normals, *cloud_smoothed_normals);
+			*/
+			/*
+		pcl::Poisson<pcl::PointNormal> poisson;
+		poisson.setDepth(9);
+		poisson.setInputCloud
+		(cloud_smoothed_normals);
+		pcl::PolygonMesh mesh;
+		poisson.reconstruct(mesh);
+		*/
+			//float step = 0.1f;
+			/*for (size_t z = 0; z < cloud_cluster->size(); z++)
+			{
+
+			dense_cloud_cluster->push_back(cloud_cluster->points[z]);
+			pcl::PointXYZRGBA newPoint;
+			newPoint.r = cloud_cluster->points[z].r;
+			newPoint.g = cloud_cluster->points[z].g;
+			newPoint.b = cloud_cluster->points[z].b;
+			newPoint.a = 255;
+
+
+			newPoint.x = cloud_cluster->points[z].x + cloud_cluster->points[z].x*step;
+			newPoint.y = cloud_cluster->points[z].y;
+			newPoint.z = cloud_cluster->points[z].z;
+			dense_cloud_cluster->push_back(newPoint);
+			newPoint.y = cloud_cluster->points[z].y + cloud_cluster->points[z].y*step;
+			newPoint.x = cloud_cluster->points[z].x;
+			newPoint.z = cloud_cluster->points[z].z;
+			dense_cloud_cluster->push_back(newPoint);
+			newPoint.z = cloud_cluster->points[z].z + cloud_cluster->points[z].z*step;
+			newPoint.x = cloud_cluster->points[z].x;
+			newPoint.y = cloud_cluster->points[z].y;
+			dense_cloud_cluster->push_back(newPoint);
+
+
+			}*/
+
+			string plyPath = locationForOutputClouds + "cloud_cluster_" + to_string(j) + ".ply";
+			savePointCloudsPLY(plyPath, cloud_cluster, NULL);
+			std::vector<std::string> paths;
+			std::vector<std::string> labels;
+			string res = exec(path2classifier, plyPath, "--ply_path", paths, labels);
+			if (labels[0] == "bird")//sorry I'm doing this, I'm really desperate now -.-
+			{
+				int r = 0, g = 0, b = 0;
+				for (size_t h = 0; h < cloud_cluster->size(); h++)
+				{
+					r += cloud_cluster->points[h].r;
+					g += cloud_cluster->points[h].g;
+					b += cloud_cluster->points[h].b;
+
+				}
+				if (g > r + b)
+				{
+					cout << "it is a shoe " << endl;
+					continue;
+
+				}
+				float averageYellow = (g + r) / 2.0;
+				if (averageYellow - 0.1*averageYellow < g&& g < averageYellow + 0.1*averageYellow && averageYellow - 0.1*averageYellow < r&& r < averageYellow + 0.1*averageYellow)
+				{
+					cout << "Possibly a yellow piece!" << endl;
+					continue;
+				}
+			}
+
+			cout << labels[0] << ":" << paths[0] << endl;
+			finalClouds.push_back(cloud_cluster);
+
+	
+			viewer3.addPointCloud(cloud_cluster, "instance"+to_string(j));
+			//viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance");
+			viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "instance" + to_string(j));
+
+
+			while (!viewer3.wasStopped())
+			{
+				viewer3.spinOnce(100);
+				//		viewer4.spinOnce(100);
+
+			}
+
+
+
+			j++;
+		}
+	}
+	////
+	// destroy image streams and close the OpenNI device
+	niDepthStream.destroy();
+	niColorStream.destroy();
+	//for all open streams
+	niDevice.close();
+	//for all open 
+	OpenNI::shutdown();
 	return (0);
 }
 
