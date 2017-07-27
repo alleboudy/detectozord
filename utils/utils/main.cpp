@@ -266,7 +266,16 @@ void generateModelsnormalizedCenteredClouds(string projectSrcDir, string dataMai
 			}
 
 
-			// Create and accumulate points
+			
+			pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
+			pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
+			ne.setKSearch(100);
+
+
+
+			ne.setInputCloud(modelCloud);
+			ne.compute(*cloud_normals);
+
 
 
 			float largestx = -std::numeric_limits<float>::max(), largesty = -std::numeric_limits<float>::max(), largestz = -std::numeric_limits<float>::max();
@@ -319,7 +328,7 @@ void generateModelsnormalizedCenteredClouds(string projectSrcDir, string dataMai
 
 
 			// Save point clouds
-			savePointCloudsPLY(outputCloudsDir + "\\" + modelName + "-" + to_string(modelIndex) + ".ply", modelCloud, NULL);
+			savePointCloudsPLY(outputCloudsDir + "\\" + modelName + "-" + to_string(modelIndex) + ".ply", modelCloud, cloud_normals);
 
 		}
 	}
@@ -567,9 +576,9 @@ void generateSceneCloudsFromRGBD(string projectSrcDir, string dataMainPath, stri
 int main(int argc, char* argv[])
 {
 	string projectSrcDir = PROJECT_SOURCE_DIR;
-	string dataMainPath = "C:\\Users\\ahmad\\Desktop\\seg\\segmentation\\notyet";
-	string outputCloudsDir = "C:\\Users\\ahmad\\Desktop\\more";
-	normalizeCenterClouds(projectSrcDir, dataMainPath, outputCloudsDir);
+	string dataMainPath = "D:\\plarr\\betterTrain";
+	string outputCloudsDir = "D:\\plarr\\trainplyfiles";
+	generateModelsnormalizedCenteredClouds(projectSrcDir, dataMainPath, outputCloudsDir);
 
 	return 0;
 }
