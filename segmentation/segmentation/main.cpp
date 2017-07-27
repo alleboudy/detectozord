@@ -62,7 +62,7 @@ std::vector<std::string> split(const std::string &s, char delim) {
 }
 
 std::string exec(string path2classifier, string path2plyFile, string flag, std::vector<std::string>& paths, std::vector<std::string>& labels) {
-	string cmd = "cd " + path2classifier + " & python " + path2classifier + "classify.py " + flag + " " + path2plyFile;
+	string cmd = "cd " + path2classifier + " & python " + path2classifier + "requestClassification.py " + flag + " " + path2plyFile;
 	std::array<char, 128> buffer;
 	std::string result;
 	std::shared_ptr<FILE> pipe(_popen(cmd.c_str(), "r"), _pclose);
@@ -71,6 +71,8 @@ std::string exec(string path2classifier, string path2plyFile, string flag, std::
 		if (fgets(buffer.data(), 128, pipe.get()) != NULL)
 			result += buffer.data();
 	}
+	cout << "El classification yastaaaaaaa!!!" << endl;;
+	cout << result << endl;
 	char delim = '\n';
 	vector<string>alllines;
 	alllines = split(result, delim);
@@ -419,7 +421,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 		savePointCloudsPLY(plyPath, cloud_cluster, NULL);
 		std::vector<std::string> paths;
 		std::vector<std::string> labels;
-		string res = exec(path2classifier, plyPath, "--ply_path", paths, labels);
+		string res = exec(path2classifier, plyPath, "--ply_path ", paths, labels);
 		if (labels[0] == "bird")//sorry I'm doing this, I'm really desperate now -.-
 		{
 			int r = 0, g = 0, b = 0;
@@ -440,19 +442,34 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 			if (averageYellow - 0.1*averageYellow < g&& g < averageYellow + 0.1*averageYellow && averageYellow - 0.1*averageYellow < r&& r < averageYellow + 0.1*averageYellow)
 			{
 				cout << "Possibly a yellow piece!" << endl;
-			//	continue;
+				//	continue;
 			}
 		}
-
+		
 		cout << labels[0] << ":" << paths[0] << endl;
+		int r=0, g=0, b=0;
+		if (labels[0] == "bird")
+		{
+			r = 255;
+		}
+		else if (labels[0] == "house")
+		{
+			b = 255;
+		}
+		else
+		{
+			g = 255;
+		}
 		for (size_t n = 0; n < cloud_cluster->size(); n++)
 		{
 			//finalClouds[i]->points[l];
-			cloud_cluster->points[n].r = 0;
+			cloud_cluster->points[n].r = r;
 			//cloud_cluster->points[n].g = 255;
-			cloud_cluster->points[n].b = 0;
+			cloud_cluster->points[n].b = b;
+			cloud_cluster->points[n].g = g;
+
 			cloud->push_back(cloud_cluster->points[n]);
-		//	cout << "changed colors";
+			//	cout << "changed colors";
 		}
 		finalClouds.push_back(cloud_cluster);
 
