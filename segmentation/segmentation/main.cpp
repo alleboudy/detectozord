@@ -17,6 +17,7 @@
 #include <pcl/surface/on_nurbs/triangulation.h>
 #include <pcl/segmentation/extract_polygonal_prism_data.h>
 #include <pcl/surface/convex_hull.h>
+#include <pcl/registration/icp.h>
 // including opencv2 headers
 #include <opencv2/imgproc.hpp>
 #include "opencv2/opencv.hpp"
@@ -35,12 +36,24 @@
 #include <PS1080.h>
 #include<cmath>
 #include <Eigen/Dense>
+#include <thread>
 
 
 using namespace std;
 using namespace cv;
 using namespace boost::filesystem;
 using namespace openni;
+
+bool debug = true;
+
+
+/*pcl::PointCloud<pcl::PointXYZRGBA>::Ptr birdCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr houseCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr canCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr crackerCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr shoeCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+*/
+
 
 
 
@@ -71,8 +84,8 @@ std::string exec(string path2classifier, string path2plyFile, string flag, std::
 		if (fgets(buffer.data(), 128, pipe.get()) != NULL)
 			result += buffer.data();
 	}
-	cout << "El classification yastaaaaaaa!!!" << endl;;
-	cout << result << endl;
+	if(debug) cout << "El classification yastaaaaaaa!!!" << endl;;
+	if(debug) cout << result << endl;
 	char delim = '\n';
 	vector<string>alllines;
 	alllines = split(result, delim);
@@ -168,7 +181,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_f(new pcl::PointCloud<pcl::PointXYZRGBA>);
 	/*string msg = "Couldn't read file C:\\Users\\ahmad\\Downloads\\challenge2_val\\scenesClouds\\05-0.ply \n";
 	if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>("C:\\Users\\ahmad\\Desktop\\testscenes\\challenge1_5-1.ply", *cloud) == -1){ PCL_ERROR(msg.c_str()); return (-1); }
-	std::cout << "Loaded" << cloud->width * cloud->height << "points" << std::endl;
+	if(debug) cout << "Loaded" << cloud->width * cloud->height << "points" << std::endl;
 
 	*/
 
@@ -216,7 +229,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 	uniform_sampling.filter(*cloud_filtered);
 
 
-	std::cout << "PointCloud after filtering has: " << cloud_filtered->points.size() << " data points." << std::endl; //*
+	if(debug) cout << "PointCloud after filtering has: " << cloud_filtered->points.size() << " data points." << std::endl; //*
 
 	// Create the segmentation object for the planar model and set all the parameters
 	pcl::SACSegmentation<pcl::PointXYZRGBA> seg;
@@ -240,7 +253,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 		seg.segment(*inliers, *coefficients);
 		if (inliers->indices.size() == 0)
 		{
-			std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
+			if(debug) cout << "Could not estimate a planar model for the given dataset." << std::endl;
 			break;
 		}
 
@@ -252,7 +265,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 
 		// Get the points associated with the planar surface
 		extract.filter(*cloud_plane);
-		std::cout << "PointCloud representing the planar component: " << cloud_plane->points.size() << " data points." << std::endl;
+		if(debug) cout << "PointCloud representing the planar component: " << cloud_plane->points.size() << " data points." << std::endl;
 		if (prevSize == cloud_plane->points.size())
 		{
 			repeatCounter--;
@@ -277,7 +290,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 
 			if (hull.getDimension() == 2)
 			{
-				cout << "using prism to remove outlier" << endl;
+				if(debug) cout << "using prism to remove outlier" << endl;
 				pcl::ExtractPolygonalPrismData<pcl::PointXYZRGBA> prism;
 				prism.setInputCloud(cloud_filtered);
 				prism.setInputPlanarHull(hull_points);
@@ -316,7 +329,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 	ec.setSearchMethod(tree);
 	ec.setInputCloud(cloud_filtered);
 	ec.extract(cluster_indices);
-	cout << "Euclidean cluster done!" << endl;
+	if(debug) cout << "Euclidean cluster done!" << endl;
 
 	int j = 0;
 	vector<	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> finalClouds;// (new pcl::PointCloud<pcl::PointXYZRGBA>);
@@ -330,13 +343,13 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 		cloud_cluster->height = 1;
 		cloud_cluster->is_dense = true;
 
-		std::cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size() << " data points." << std::endl;
+		if(debug) cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size() << " data points." << std::endl;
 		std::stringstream ss;
 		ss << "cloud_cluster_" << j << ".pcd";
 		if (cloud_cluster->size() < 500)
 		{
 			continue;
-			cout << "skipping instance" << endl;
+			if(debug) cout << "skipping instance" << endl;
 		}
 
 		//densifying the clouds
@@ -356,7 +369,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 			mls.setUpsamplingStepSize(0.008);//smaller increases the generated points
 			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_smoothed(new pcl::PointCloud<pcl::PointXYZRGBA>());
 			mls.process(*cloud_cluster);
-			cout << "upsampled cloud" << cloud_cluster->size() << endl;
+			if(debug) cout << "upsampled cloud" << cloud_cluster->size() << endl;
 		}
 		if (cloud_cluster->size() == 0)
 		{
@@ -434,32 +447,116 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 			}
 			if (g > r + b)
 			{
-				cout << "it is a shoe " << endl;
-
+				if(debug) cout << "it is a shoe " << endl;
+				labels[0] = "shoe";
 
 			}
 			float averageYellow = (g + r) / 2.0;
 			if (averageYellow - 0.1*averageYellow < g&& g < averageYellow + 0.1*averageYellow && averageYellow - 0.1*averageYellow < r&& r < averageYellow + 0.1*averageYellow)
 			{
-				cout << "Possibly a yellow piece!" << endl;
+				if(debug) cout << "Possibly a yellow piece!" << endl;
 				//	continue;
 			}
 		}
 		
-		cout << labels[0] << ":" << paths[0] << endl;
+		if(debug) cout << labels[0] << ":" << paths[0] << endl;
+
+
+		
+
+		//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr currentModel(new pcl::PointCloud<pcl::PointXYZRGBA>);
+
 		int r=0, g=0, b=0;
 		if (labels[0] == "bird")
 		{
 			r = 255;
+			b = 255;
+			//currentModel = birdCloud;
 		}
 		else if (labels[0] == "house")
 		{
 			b = 255;
+			//currentModel = houseCloud;
+		}
+		else if (labels[0] == "cracker")
+		{
+			b = 255;
+			g = 255;
+			//currentModel = crackerCloud;
+		}
+		else if (labels[0] == "can")
+		{
+			
+			r = 255;
+			//currentModel = canCloud;
+		}
+		else if (labels[0] == "shoe")
+		{
+			g = 255;
+			//currentModel = shoeCloud;
+		}
+		
+		if (debug) cout << "alignment" << endl;
+
+
+		/*vector<Eigen::Matrix4f> finalTransformations;
+		vector<double> efs;
+		//int icpsetMaximumIterations = 50;
+		//float icpsetMaxCorrespondenceDistance = 0.02f;
+		pcl::IterativeClosestPoint<pcl::PointXYZRGBA, pcl::PointXYZRGBA> icp;
+		icp.setMaximumIterations(50);
+		//icp.setMaxCorrespondenceDistance(icpsetMaxCorrespondenceDistance);
+		//icp.setUseReciprocalCorrespondences(false);//
+		icp.setInputTarget(cloud_cluster);
+		icp.setInputSource(currentModel);
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr registered(new pcl::PointCloud<pcl::PointXYZRGBA>);
+		icp.align(*registered);
+		efs.push_back(icp.getEuclideanFitnessEpsilon());
+		//registeredModelClusteredKeyPoints.push_back(registered);
+		finalTransformations.push_back(icp.getFinalTransformation());
+		cout << "cluster " << i << " ";
+		if (icp.hasConverged())
+		{
+			cout << "is aligned" << endl;
 		}
 		else
 		{
-			g = 255;
+			cout << "not aligned" << endl;
 		}
+
+		if (debug)cout << "showing result" << endl;
+		pcl::visualization::PCLVisualizer viewer3("clustered instances");
+		//viewer3.addPointCloud(birdCloud, "birdCloud");
+		//viewer3.addPointCloud(canCloud, "canCloud");
+		//viewer3.addPointCloud(shoeCloud, "shoeCloud");
+		for (size_t f = 0; f < registered->size(); f++)
+		{
+			registered->points[f].g = 0;
+			registered->points[f].b = 0;
+
+
+		}
+		viewer3.addPointCloud(registered, "registered");
+		viewer3.addPointCloud(cloud, "cloud");
+
+		//viewer3.addPointCloud(crackerCloud, "crackerCloud");
+		viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "registered" );
+
+
+
+		while (!viewer3.wasStopped())
+		{
+		viewer3.spinOnce(100);
+
+
+		}*/
+		
+
+		
+
+
+		
+
 		for (size_t n = 0; n < cloud_cluster->size(); n++)
 		{
 			//finalClouds[i]->points[l];
@@ -469,7 +566,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 			cloud_cluster->points[n].g = g;
 
 			cloud->push_back(cloud_cluster->points[n]);
-			//	cout << "changed colors";
+			//	if(debug) cout << "changed colors";
 		}
 		finalClouds.push_back(cloud_cluster);
 
@@ -514,9 +611,13 @@ public:
 		if (!viewer.wasStopped())
 		{
 
-			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>(*cloud));
-			cout << "new cloud" << endl;
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+			if(debug) cout << "new cloud" << endl;
 			//processCloud(modelCloud);
+			//modelCloud
+			std::vector<int> indices;
+			pcl::removeNaNFromPointCloud(*cloud, *modelCloud, indices);
+			//savePointCloudsPLY("C:\\Users\\ahmad\\Desktop\\scene\\scene.ply", modelCloud, NULL);
 			viewer.showCloud(processCloud(modelCloud));
 		}
 	}
@@ -527,6 +628,8 @@ public:
 
 		boost::function<void(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr&)> f =
 			boost::bind(&SimpleOpenNIViewer::cloud_cb_, this, _1);
+
+	
 
 		interface->registerCallback(f);
 
@@ -546,327 +649,86 @@ public:
 
 int main(int argc, char** argv)
 {
+	/*std::string projectSrcDir = PROJECT_SOURCE_DIR;
 
+	string mainModelsPath = projectSrcDir+"/models";
+	if(debug) cout << projectSrcDir << endl;
+
+	if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath+"/bird.ply", *birdCloud) == -1){ PCL_ERROR("Couldn't read file birdCloud.ply \n"); return (-1); }
+	std::cout << "Loaded" << birdCloud->width * birdCloud->height << "points" << std::endl;
+	if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/can.ply", *canCloud) == -1){ PCL_ERROR("Couldn't read file can.ply \n"); return (-1); }
+	std::cout << "Loaded" << canCloud->width * canCloud->height << "points" << std::endl;
+	if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/shoe.ply", *shoeCloud) == -1){ PCL_ERROR("Couldn't read file shoe.ply \n"); return (-1); }
+	std::cout << "Loaded" << shoeCloud->width * shoeCloud->height << "points" << std::endl;
+	if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/house.ply", *houseCloud) == -1){ PCL_ERROR("Couldn't read file house.ply \n"); return (-1); }
+	std::cout << "Loaded" << houseCloud->width * houseCloud->height << "points" << std::endl;
+	if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/cracker.ply", *crackerCloud) == -1){ PCL_ERROR("Couldn't read file crackerCloud.ply \n"); return (-1); }
+	std::cout << "Loaded" << crackerCloud->width * crackerCloud->height << "points" << std::endl;
+	
+	pcl::console::print_highlight("Downsampling...\n");
+	pcl::VoxelGrid<pcl::PointXYZRGBA> grid;
+	const float leaf = 0.005f;
+	grid.setLeafSize(leaf, leaf, leaf);
+
+
+	grid.setInputCloud(birdCloud);
+	grid.filter(*birdCloud);
+
+
+
+	grid.setInputCloud(houseCloud);
+	grid.filter(*houseCloud);
+
+
+	grid.setInputCloud(canCloud);
+	grid.filter(*canCloud);
+
+
+	grid.setInputCloud(shoeCloud);
+	grid.filter(*shoeCloud);
+
+
+
+	grid.setInputCloud(crackerCloud);
+	grid.filter(*crackerCloud);
+	*/
+
+
+
+
+	/*pcl::visualization::PCLVisualizer viewer3("clustered instances");
+	//viewer3.addPointCloud(birdCloud, "birdCloud");
+	//viewer3.addPointCloud(canCloud, "canCloud");
+	//viewer3.addPointCloud(shoeCloud, "shoeCloud");
+	viewer3.addPointCloud(houseCloud, "houseCloud");
+	//viewer3.addPointCloud(crackerCloud, "crackerCloud");
+
+
+	
+	while (!viewer3.wasStopped())
+	{
+	viewer3.spinOnce(100);
+		
+
+	}
+	*/
 
 
 	SimpleOpenNIViewer v;
 	v.run();
+	/*pcl::PointCloud<pcl::PointXYZRGBA>::Ptr scene(new pcl::PointCloud<pcl::PointXYZRGBA>);
+
+	if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>("C:\\Users\\ahmad\\Desktop\\scene\\scene.ply", *scene) == -1){ PCL_ERROR("Couldn't read file scene.ply \n"); return (-1); }
+	std::cout << "Loaded" << scene->width * scene->height << "points" << std::endl;
+	
+	pcl::visualization::PCLVisualizer viewer3("scene instances");
+	viewer3.addPointCloud(processCloud(scene), "scene");
+	while (!viewer3.wasStopped())
+	{
+		viewer3.spinOnce(100);
 
 
-
-
+	}*/
 	return (0);
 }
-
-//#include <sstream>
-//#include <string>
-//#include <unordered_map>
-//
-//// including pcl headers
-//#include <pcl/io/pcd_io.h>
-//#include <pcl/point_cloud.h>
-//#include <pcl/correspondence.h>
-//#include <pcl/features/normal_3d_omp.h>
-//#include <pcl/features/shot_omp.h>
-//#include <pcl/features/board.h>
-//#include <pcl/filters/uniform_sampling.h>
-//#include <pcl/recognition/cg/hough_3d.h>
-//#include <pcl/recognition/cg/geometric_consistency.h>
-//#include <pcl/recognition/hv/hv_go.h>
-//#include <pcl/registration/icp.h>
-//#include <pcl/visualization/pcl_visualizer.h>
-//#include <pcl/kdtree/kdtree_flann.h>
-//#include <pcl/kdtree/impl/kdtree_flann.hpp>
-//#include <pcl/common/transforms.h>
-//#include <pcl/console/parse.h>
-//#include <pcl/keypoints/iss_3d.h>
-//#include <pcl/recognition/hv/greedy_verification.h>
-//#include <pcl/io/ply_io.h>
-//#include <pcl/ModelCoefficients.h>
-//#include <pcl/sample_consensus/method_types.h>
-//#include <pcl/sample_consensus/model_types.h>
-//#include <pcl/segmentation/sac_segmentation.h>
-//#include <pcl/filters/extract_indices.h>
-//#include <pcl/common/centroid.h>
-//
-//#include <pcl/surface/grid_projection.h>
-//// including boost headers
-//#include <boost/algorithm/string/replace.hpp>
-//#include <boost/filesystem.hpp>
-//#include <boost/algorithm/string/predicate.hpp>
-//#include <boost/lexical_cast.hpp>
-//
-//// including opencv2 headers
-//#include <opencv2/imgproc.hpp>
-//#include "opencv2/opencv.hpp"
-//#include "opencv2/highgui/highgui.hpp"
-//
-//// writing into a file
-//#include <ostream>
-//#include <vector>
-//#include <algorithm>
-//#include <iterator>
-//#include <iostream>
-//#include <boost/iostreams/device/file.hpp>
-//#include <boost/iostreams/stream.hpp>
-//using namespace std;
-//using namespace cv;
-//using namespace boost::filesystem;
-//
-//
-
-//
-//int
-//main(int argc, char** argv)
-//{
-//	// Read in the cloud data
-//	string projectSrcDir = PROJECT_SOURCE_DIR;
-//	string dataMainPath = "C:\\Users\\ahmad\\Downloads\\challenge2_val\\last";
-//	string outputCloudsDir = "C:\\Users\\ahmad\\Downloads\\challenge2_val\\scenesClouds";
-//	for (auto modelsIT : directory_iterator(dataMainPath))
-//	{
-//		string modelPathIT = modelsIT.path().string();//path to a model folder, e.g. bird
-//		boost::replace_all(modelPathIT, "\\", "/");
-//		string modelName = modelPathIT.substr(modelPathIT.find_last_of("/") + 1);
-//		string modelRGBDir = modelPathIT + "/rgb/";
-//		string modelDepthDir = modelPathIT + "/depth/";
-//
-//
-//		std::string line;
-//
-//		// loading camera intrinsic parameters
-//		std::ifstream ifStreamInfo(modelPathIT + "/info.yml");
-//		vector<vector<float>> cameraIntrinsicParamtersList;
-//		while (std::getline(ifStreamInfo, line))
-//		{
-//			std::istringstream iss(line);
-//			if (isdigit(line[0]))
-//				continue;
-//			unsigned first = line.find("[");
-//			unsigned last = line.find("]");
-//			string strNew = line.substr(first + 1, last - first - 1);
-//			std::vector<float> camIntrinsicParams;
-//			std::stringstream ss(strNew);
-//			string i;
-//			while (ss >> i)
-//			{
-//				boost::replace_all(i, ",", "");
-//				camIntrinsicParams.push_back(atof(i.c_str()));
-//			}
-//			cameraIntrinsicParamtersList.push_back(camIntrinsicParams);
-//		}
-//		// loading rotation and transformation matrices for all models
-//		vector<vector<float>> rotationValuesList;
-//		vector<vector<float>> translationValuesList;
-//		std::ifstream ifStreamGT(modelPathIT + "/gt.yml");
-//		bool processingRotationValues = true;
-//		while (std::getline(ifStreamGT, line))
-//		{
-//			std::istringstream iss(line);
-//			if (isdigit(line[0]) || boost::starts_with(line, "  obj_id:")){
-//				continue;
-//			}
-//			unsigned first = line.find("[");
-//			unsigned last = line.find("]");
-//			string strNew = line.substr(first + 1, last - first - 1);
-//			std::vector<float> rotationValues;
-//			std::vector<float> translationValues;
-//			boost::replace_all(strNew, ",", "");
-//
-//			std::stringstream ss(strNew);
-//			string i;
-//			while (ss >> i)
-//			{
-//				if (processingRotationValues){
-//					rotationValues.push_back(atof(i.c_str()));
-//				}
-//				else{
-//					translationValues.push_back(atof(i.c_str()));
-//				}
-//			}
-//			if (processingRotationValues){
-//				rotationValuesList.push_back(rotationValues);
-//			}
-//			else{
-//				translationValuesList.push_back(translationValues);
-//			}
-//			processingRotationValues = !processingRotationValues;
-//		}
-//
-//		int i = 0;
-//		int modelIndex = -1;
-//		for (auto it : directory_iterator(modelRGBDir))
-//		{
-//			modelIndex++;
-//			// Loading depth image and color image
-//
-//			string path = it.path().string();
-//			boost::replace_all(path, "\\", "/");
-//			string colorFilename = path;
-//
-//			//cout << path << endl;
-//			boost::replace_all(path, "rgb", "depth");
-//			string depthFilename = path;
-//			//cout << path << endl;
-//
-//			cv::Mat depthImg = cv::imread(depthFilename, CV_LOAD_IMAGE_UNCHANGED);
-//			cv::Mat colorImg = cv::imread(colorFilename, CV_LOAD_IMAGE_COLOR);
-//			cv::cvtColor(colorImg, colorImg, CV_BGR2RGB); //this will put colors right
-//			// Loading camera pose
-//			//string poseFilename = projectSrcDir + "/data/pose/pose" + to_string(index) + ".txt";
-//			Eigen::Matrix4f poseMat;   // 4x4 transformation matrix
-//
-//			vector<float> rotationValues = rotationValuesList[i];
-//			vector<float> translationsValues = translationValuesList[i];
-//			vector<float> camIntrinsicParams = cameraIntrinsicParamtersList[i++];
-//
-//			poseMat(0, 0) = rotationValues[0];
-//			poseMat(0, 1) = rotationValues[1];
-//			poseMat(0, 2) = rotationValues[2];
-//			poseMat(0, 3) = translationsValues[0];
-//			poseMat(1, 0) = rotationValues[3];
-//			poseMat(1, 1) = rotationValues[4];
-//			poseMat(1, 2) = rotationValues[5];
-//			poseMat(1, 3) = translationsValues[1];
-//			poseMat(2, 0) = rotationValues[6];
-//			poseMat(2, 1) = rotationValues[7];
-//			poseMat(2, 2) = rotationValues[8];
-//			poseMat(2, 3) = translationsValues[2];
-//			poseMat(3, 0) = 0;
-//			poseMat(3, 1) = 0;
-//			poseMat(3, 2) = 0;
-//			poseMat(3, 3) = 1;
-//
-//			//cout << "Transformation matrix" << endl << poseMat << endl;
-//
-//			// Setting camera intrinsic parameters of depth camera
-//			float focal = camIntrinsicParams[0];  // focal length
-//
-//			float px = camIntrinsicParams[2]; // principal point x
-//			float py = camIntrinsicParams[5]; // principal point y
-//
-//
-//			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
-//
-//
-//
-//			//	pcl::CentroidPoint<pcl::PointXYZRGBA> centroid;
-//
-//
-//			//Create point clouds from depth image and color image using camera intrinsic parameters
-//			// (1) Compute 3D point from depth values and pixel locations on depth image using camera intrinsic parameters.
-//			for (int j = 0; j < depthImg.cols; j += 1)
-//			{
-//				for (int i = 0; i < depthImg.rows; i += 1)
-//				{
-//					auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focal, (i - py)*depthImg.at<ushort>(i, j) / focal, depthImg.at<ushort>(i, j), 1);
-//
-//					// (2) Translate 3D point in local coordinate system to 3D point in global coordinate system using camera pose.
-//					point = poseMat *point;
-//					// (3) Add the 3D point to vertices in point clouds data.
-//					pcl::PointXYZRGBA p;
-//					p.x = point[0] / 1000.0f;
-//					p.y = point[1] / 1000.0f;
-//					p.z = point[2] / 1000.0f;
-//					p.r = colorImg.at<cv::Vec3b>(i, j)[0];
-//					p.g = colorImg.at<cv::Vec3b>(i, j)[1];
-//					p.b = colorImg.at<cv::Vec3b>(i, j)[2];
-//					p.a = 255;
-//					if (p.x == 0 && p.y == 0 && p.r == 0 && p.g == 0 && p.b == 0)
-//					{
-//						continue;
-//					}
-//					modelCloud->push_back(p);
-//					//	centroid.add(p);
-//				}
-//			}
-//
-//			/*	pcl::PointCloud<pcl::Normal>::Ptr model_normals(new pcl::PointCloud<pcl::Normal>);
-//			pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
-//			ne.setKSearch(2);
-//			ne.setInputCloud(modelCloud);
-//			ne.compute(*model_normals);
-//			*/
-//
-//			// Create and accumulate points
-//
-//			/*
-//			float largestx = -std::numeric_limits<float>::max(), largesty = -std::numeric_limits<float>::max(), largestz = -std::numeric_limits<float>::max();
-//			float smallestx = std::numeric_limits<float>::max(), smallesty = std::numeric_limits<float>::max(), smallestz = std::numeric_limits<float>::max();
-//			for (size_t x = 0; x < modelCloud->size(); x++)
-//			{
-//
-//
-//				largestx = max(largestx, modelCloud->points[x].x);
-//				largesty = max(largesty, modelCloud->points[x].y);
-//				largestz = max(largestz, modelCloud->points[x].z);
-//
-//				smallestx = min(smallestx, modelCloud->points[x].x);
-//				smallesty = min(smallesty, modelCloud->points[x].y);
-//				smallestz = min(smallestz, modelCloud->points[x].z);
-//				//modelCloud->points[x].r -= c2.r;
-//				//modelCloud->points[x].g -= c2.g;
-//				//modelCloud->points[x].b -= c2.b;
-//			}*/
-//
-//		//	double scale = min((1 / (largestx - smallestx)), min(1 / (largesty - smallesty),1 / (largestz - smallestz)));
-//
-//
-//
-//			//pcl::CentroidPoint<pcl::PointXYZRGBA> centroid;
-//			//pcl::PointXYZRGBA c2;
-//			//for (size_t x = 0; x < modelCloud->size(); x++)
-//			//{
-//			//	modelCloud->points[x].x = (modelCloud->points[x].x - 0.5*(smallestx + largestx))*scale + 0.5;
-//			//	modelCloud->points[x].y = (modelCloud->points[x].y - 0.5*(smallesty + largesty))*scale + 0.5;
-//			//	modelCloud->points[x].z = (modelCloud->points[x].z - 0.5*(smallestz + largestz))*scale + 0.5;
-//			//	centroid.add(modelCloud->points[x]);
-//
-//			//}
-//
-//		/*	centroid.get(c2);
-//			for (size_t x = 0; x < modelCloud->size(); x++)
-//			{
-//
-//				modelCloud->points[x].x -= c2.x;
-//				modelCloud->points[x].y -= c2.y;
-//				modelCloud->points[x].z -= c2.z;
-//
-//
-//			}*/
-//
-//
-//
-//
-//			/*	pcl::PointXYZRGBA c2;
-//			centroid.get(c2);
-//			for (size_t x = 0; x < modelCloud->size(); x++)
-//			{
-//			modelCloud->points[x].x -= c2.x;
-//			modelCloud->points[x].y -= c2.y;
-//			modelCloud->points[x].z -= c2.z;
-//			modelCloud->points[x].r -= c2.r;
-//			modelCloud->points[x].g -= c2.g;
-//			modelCloud->points[x].b -= c2.b;
-//			}*/
-//
-//			//	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr centroidCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
-//			//	centroidCloud->push_back(c2);
-//			//	savePointCloudsPLY(outputCloudsDir + "\\" + modelName + "-" + "CENTROID.ply", centroidCloud, NULL);
-//
-//
-//			// Save point clouds
-//			savePointCloudsPLY(outputCloudsDir + "\\" + modelName + "-" + to_string(modelIndex) + ".ply", modelCloud, NULL);
-//
-//		}
-//	}
-//
-//
-//	*/
-//
-//	return (0);
-//}
-
-
-
 
