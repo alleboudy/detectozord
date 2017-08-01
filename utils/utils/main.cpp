@@ -444,42 +444,8 @@ void generateSceneCloudsFromRGBD(string projectSrcDir, string dataMainPath, stri
 			cameraIntrinsicParamtersList.push_back(camIntrinsicParams);
 		}
 		// loading rotation and transformation matrices for all models
-		vector<vector<float>> rotationValuesList;
-		vector<vector<float>> translationValuesList;
-		std::ifstream ifStreamGT(modelPathIT + "/gt.yml");
-		bool processingRotationValues = true;
-		while (std::getline(ifStreamGT, line))
-		{
-			std::istringstream iss(line);
-			if (isdigit(line[0]) || boost::starts_with(line, "  obj_id:")){
-				continue;
-			}
-			unsigned first = line.find("[");
-			unsigned last = line.find("]");
-			string strNew = line.substr(first + 1, last - first - 1);
-			std::vector<float> rotationValues;
-			std::vector<float> translationValues;
-			boost::replace_all(strNew, ",", "");
-
-			std::stringstream ss(strNew);
-			string i;
-			while (ss >> i)
-			{
-				if (processingRotationValues){
-					rotationValues.push_back(atof(i.c_str()));
-				}
-				else{
-					translationValues.push_back(atof(i.c_str()));
-				}
-			}
-			if (processingRotationValues){
-				rotationValuesList.push_back(rotationValues);
-			}
-			else{
-				translationValuesList.push_back(translationValues);
-			}
-			processingRotationValues = !processingRotationValues;
-		}
+		
+		
 
 		int i = 0;
 		int modelIndex = -1;
@@ -500,30 +466,10 @@ void generateSceneCloudsFromRGBD(string projectSrcDir, string dataMainPath, stri
 			cv::Mat depthImg = cv::imread(depthFilename, CV_LOAD_IMAGE_UNCHANGED);
 			cv::Mat colorImg = cv::imread(colorFilename, CV_LOAD_IMAGE_COLOR);
 			cv::cvtColor(colorImg, colorImg, CV_BGR2RGB); //this will put colors right
-			// Loading camera pose
-			//string poseFilename = projectSrcDir + "/data/pose/pose" + to_string(index) + ".txt";
-			Eigen::Matrix4f poseMat;   // 4x4 transformation matrix
 
-			vector<float> rotationValues = rotationValuesList[i];
-			vector<float> translationsValues = translationValuesList[i];
-			//	vector<float> camIntrinsicParams = cameraIntrinsicParamtersList[i++];
 
-			poseMat(0, 0) = rotationValues[0];
-			poseMat(0, 1) = rotationValues[1];
-			poseMat(0, 2) = rotationValues[2];
-			poseMat(0, 3) = translationsValues[0];
-			poseMat(1, 0) = rotationValues[3];
-			poseMat(1, 1) = rotationValues[4];
-			poseMat(1, 2) = rotationValues[5];
-			poseMat(1, 3) = translationsValues[1];
-			poseMat(2, 0) = rotationValues[6];
-			poseMat(2, 1) = rotationValues[7];
-			poseMat(2, 2) = rotationValues[8];
-			poseMat(2, 3) = translationsValues[2];
-			poseMat(3, 0) = 0;
-			poseMat(3, 1) = 0;
-			poseMat(3, 2) = 0;
-			poseMat(3, 3) = 1;
+
+			
 
 			//cout << "Transformation matrix" << endl << poseMat << endl;
 
@@ -550,7 +496,7 @@ void generateSceneCloudsFromRGBD(string projectSrcDir, string dataMainPath, stri
 					auto point = Eigen::Vector4f((j - px)*depthImg.at<ushort>(i, j) / focalx, (i - py)*depthImg.at<ushort>(i, j) / focaly, depthImg.at<ushort>(i, j), 1);
 
 					// (2) Translate 3D point in local coordinate system to 3D point in global coordinate system using camera pose.
-					point = poseMat *point;
+					//point = poseMat *point;
 					// (3) Add the 3D point to vertices in point clouds data.
 					pcl::PointXYZRGBA p;
 					p.x = point[0] / 1000.0f;
@@ -576,9 +522,15 @@ void generateSceneCloudsFromRGBD(string projectSrcDir, string dataMainPath, stri
 int main(int argc, char* argv[])
 {
 	string projectSrcDir = PROJECT_SOURCE_DIR;
-	string dataMainPath = "D:\\plarr\\betterTrain";
-	string outputCloudsDir = "D:\\plarr\\trainplyfiles";
-	generateModelsnormalizedCenteredClouds(projectSrcDir, dataMainPath, outputCloudsDir);
+	//string dataMainPath = "D:\\plarr\\betterTrain";
+	//string outputCloudsDir = "D:\\plarr\\trainplyfiles";
+	//generateModelsnormalizedCenteredClouds(projectSrcDir, dataMainPath, outputCloudsDir);
+
+	//generating scene clouds
+	string dataMainPath = "C:\\07";
+	string outputCloudsDir = "C:\\Users\\ahmad\\Documents\\newscenes";
+	generateSceneCloudsFromRGBD(projectSrcDir, dataMainPath, outputCloudsDir);
+
 
 	return 0;
 }
