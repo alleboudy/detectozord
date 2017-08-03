@@ -43,6 +43,16 @@
 #include <Eigen/Dense>
 #include <thread>
 
+// writing into a file
+#include <ostream>
+#include <vector>
+#include <algorithm>
+#include <iterator>
+#include <memory>
+#include <iostream>
+#include <boost/iostreams/device/file.hpp>
+#include <boost/iostreams/stream.hpp>
+
 
 using namespace std;
 using namespace cv;
@@ -62,6 +72,14 @@ string path2classifier = projectSrcDir + "/data/pointnet/";//where my fork of po
 
 string scenesRGBDMainPath = projectSrcDir + "/data/test/";//where the folders of the test scenes exist
 string mainModelsPath = projectSrcDir + "/data/models";//where the models exist
+
+string teamOutput = projectSrcDir + "/data/teamoutput";//where the models exist
+
+
+string dirChallenge = "";
+string  colorSceneFilename = "";
+string  challengeName = "";
+
 
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr birdCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr houseCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
@@ -414,13 +432,47 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 			Eigen::Matrix4f transformation = pose.getFinalTransformation();
 			Eigen::Matrix3f rotation = transformation.block<3, 3>(0, 0);
 			Eigen::Vector3f translation = transformation.block<3, 1>(0, 3);
-
+			
 			std::cout << "Transformation matrix:" << std::endl << std::endl;
 			printf("\t\t    | %6.3f %6.3f %6.3f | \n", rotation(0, 0), rotation(0, 1), rotation(0, 2));
 			printf("\t\tR = | %6.3f %6.3f %6.3f | \n", rotation(1, 0), rotation(1, 1), rotation(1, 2));
 			printf("\t\t    | %6.3f %6.3f %6.3f | \n", rotation(2, 0), rotation(2, 1), rotation(2, 2));
 			std::cout << std::endl;
 			printf("\t\tt = < %0.3f, %0.3f, %0.3f >\n", translation(0), translation(1), translation(2));
+
+
+			// output transformation matrix 
+			double score = pose.getFitnessScore();
+
+
+			string rotationValues = to_string(rotation(0, 0))
+				+ ", " + to_string(rotation(0, 1))
+				+ ", " + to_string(rotation(0, 2))
+				+ ", " + to_string(rotation(1, 0))
+				+ ", " + to_string(rotation(1, 1))
+				+ ", " + to_string(rotation(1, 2))
+				+ ", " + to_string(rotation(2, 0))
+				+ ", " + to_string(rotation(2, 1))
+				+ ", " + to_string(rotation(2, 2));
+
+			string translationValues = to_string(translation(0))
+				+ ", " + to_string(translation(1))
+				+ ", " + to_string(translation(2));
+
+
+			// out writes to file XXXX_YY.txt
+			double timeTaken = (double)(((double)(clock() - tStart)) / CLOCKS_PER_SEC);
+			
+			string outputFileName = dirChallenge + "/" + colorSceneFilename + "_" + challengeName + ".yml";
+			boost::iostreams::stream_buffer<boost::iostreams::file_sink> buf(outputFileName);
+			std::ostream osout(&buf);
+			osout << "run_time: " + to_string(timeTaken) + "\r\n";
+			osout << "ests:\r\n";
+			osout << "- {score: " + to_string(score) + ", R : [" + rotationValues + "], t: [" + translationValues + "]}";
+			
+
+
+
 		}
 		else std::cout << "Did not converge." << std::endl;
 
@@ -1074,10 +1126,10 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr generateSceneCloudsFromRGBD(string path)
 	//cout << "Transformation matrix" << endl << poseMat << endl;
 
 	// Setting camera intrinsic parameters of depth camera
-	float focalx = 579.470894;  // focal length
-	float focaly = 580.338802;
-	float px = 322.229447; // principal point x
-	float py = 244.567608; // principal point y
+	float focalx = 570;  // focal length
+	float focaly = 570 ;
+	float px = 320; // principal point x
+	float py = 240; // principal point y
 
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
@@ -1126,9 +1178,16 @@ int main(int argc, char** argv)
 {
 
 
+
 	if (debug) cout << projectSrcDir << endl;
 	if (doAlignment)
-	{
+	{	
+	boost::filesystem::path dirTeamName(teamOutput.c_str());
+	
+	if (boost::filesystem::create_directory(dirTeamName))
+		{
+			std::cerr << "Teamname directory created: " << dirTeamName << std::endl;
+		}
 
 		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/bird.ply", *birdCloud) == -1){ PCL_ERROR("Couldn't read file birdCloud.ply \n"); return (-1); }
 		std::cout << "Loaded" << birdCloud->width * birdCloud->height << "points" << std::endl;
@@ -1246,13 +1305,18 @@ int main(int argc, char** argv)
 			string modelRGBDir = modelPathIT + "/rgb/";
 			string modelDepthDir = modelPathIT + "/depth/";
 
+			dirChallenge = modelPathIT;
+			challengeName = modelName;
 
-
-			int i = 0;
-			int modelIndex = -1;
+			//int i = 0;
+			//int modelIndex = -1;
 			for (boost::filesystem::directory_entry it : directory_iterator(modelRGBDir))
 			{
-				modelIndex++;
+				
+				 colorSceneFilename = it.path().string().substr(it.path().string().find_last_of("/") + 1);
+				 boost::replace_all(colorSceneFilename, ".png", "");
+
+				//modelIndex++;
 				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr scene = processCloud(generateSceneCloudsFromRGBD(it.path().string()));
 				pcl::visualization::PCLVisualizer viewer3("scene instances");
 				viewer3.addPointCloud(scene, "scene");
