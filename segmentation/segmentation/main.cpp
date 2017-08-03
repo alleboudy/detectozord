@@ -61,8 +61,7 @@ using namespace openni;
 typedef pcl::SHOT352 DescriptorType;
 
 
-
-bool debug = true;
+bool debug = false;
 bool live = false;
 bool doAlignment = true;
 std::string projectSrcDir = PROJECT_SOURCE_DIR;
@@ -281,7 +280,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 
 
 
-	savePointCloudsPLY(plyPath, cloud_cluster, NULL);
+	savePointCloudsPLY(plyPath, cloud_cluster, cluster_normal);
 
 	std::vector<std::string> paths;
 	std::vector<std::string> labels;
@@ -431,7 +430,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 		pose.setNumberOfSamples(3);
 		// Set the similarity threshold (0-1) between edge lengths of the polygons. The
 		// closer to 1, the more strict the rejector will be, probably discarding acceptable poses.
-		pose.setSimilarityThreshold(0.6f);
+		pose.setSimilarityThreshold(0.01f);
 		// Set the maximum distance threshold between two correspondent points in source and target.
 		// If the distance is larger, the points will be ignored in the alignment process.
 		pose.setMaxCorrespondenceDistance(0.01f);
@@ -479,7 +478,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 				std::cerr << "path2output created: " << path2output << std::endl;
 			}
 
-			string outputFileName = path2output + "/" + colorSceneFilename + "_" + objID + ".yml";
+			string outputFileName = path2output + "/" + colorSceneFilename + "_" + objID +"__"+ to_string(j) + ".yml";
 
 			if (debug){
 				cout << "outputFileName" << outputFileName << endl;
@@ -1153,10 +1152,10 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr generateSceneCloudsFromRGBD(string path)
 	//cout << "Transformation matrix" << endl << poseMat << endl;
 
 	// Setting camera intrinsic parameters of depth camera
-	float focalx = 570;  // focal length
-	float focaly = 570;
-	float px = 320; // principal point x
-	float py = 240; // principal point y
+	float focalx = 539.8100;  // focal length
+	float focaly = 539.8300;
+	float px = 318.2700; // principal point x
+	float py = 239.5600; // principal point y
 
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
