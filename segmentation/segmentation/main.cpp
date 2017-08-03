@@ -35,7 +35,7 @@
 #include <pcl/recognition/cg/geometric_consistency.h>
 #include <pcl/io/openni2_grabber.h>
 #include <pcl/visualization/cloud_viewer.h>
-
+#include <pcl/registration/sample_consensus_prerejective.h>
 
 #include <OpenNI.h>
 #include <PS1080.h>
@@ -52,7 +52,7 @@ typedef pcl::SHOT352 DescriptorType;
 
 bool debug = true;
 bool live = false;
-bool doAlignment = false;
+bool doAlignment = true;
 std::string projectSrcDir = PROJECT_SOURCE_DIR;
 
 string locationForOutputClouds = projectSrcDir + "/data/temoclouds/";//tep location for temp out clouds passed for classification
@@ -79,6 +79,12 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr reducedshoeCloud(new pcl::PointCloud<pcl
 
 
 
+pcl::PointCloud<pcl::Normal>::Ptr birdNormals(new pcl::PointCloud<pcl::Normal>);
+pcl::PointCloud<pcl::Normal>::Ptr shoeNormals(new pcl::PointCloud<pcl::Normal>);
+
+pcl::PointCloud<pcl::Normal>::Ptr canNormals(new pcl::PointCloud<pcl::Normal>);
+pcl::PointCloud<pcl::Normal>::Ptr crackerNormals(new pcl::PointCloud<pcl::Normal>);
+pcl::PointCloud<pcl::Normal>::Ptr houseNormals(new pcl::PointCloud<pcl::Normal>);
 
 
 template<typename Out>
@@ -196,7 +202,7 @@ bool savePointCloudsPLY(string filename, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
 }
 
 
-pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::PointIndices>::const_iterator it, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_filtered, int j){
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::PointIndices>::const_iterator it, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_filtered, int j, pcl::PointCloud<pcl::Normal>::Ptr cloud_filtered_normal){
 	clock_t tStart = clock();
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGBA>);
@@ -221,6 +227,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 
 	if (cloud_cluster->size() < 512)
 	{
+		return NULL;
 		pcl::MovingLeastSquares<pcl::PointXYZRGBA, pcl::PointXYZRGBA> mls;
 		mls.setInputCloud(cloud_cluster);
 		mls.setSearchRadius(0.03);
@@ -254,7 +261,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 
 
 
-	savePointCloudsPLY(plyPath, cloud_cluster, cluster_normal);
+	savePointCloudsPLY(plyPath, cloud_cluster, NULL);
 
 	std::vector<std::string> paths;
 	std::vector<std::string> labels;
@@ -262,7 +269,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 	
 
 	if (debug) cout << labels[0] << ":" << paths[0] << endl;
-	if (::atof(paths[0].c_str())<0.6f)
+	if (::atof(paths[0].c_str())<0.5f)
 	{
 		return NULL;
 	}
@@ -271,6 +278,25 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr currentModel(new pcl::PointCloud<pcl::PointXYZRGBA>);
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr reducedcurrentModel(new pcl::PointCloud<pcl::PointXYZRGBA>);
+	pcl::PointCloud<pcl::Normal>::Ptr currentModelNormals(new pcl::PointCloud<pcl::Normal>);
+	if (labels[0] == "bird")//sorry I'm doing this, I'm really desperate now -.-
+	{
+		int r = 0, g = 0, b = 0;
+		for (size_t h = 0; h < cloud_cluster->size(); h++)
+		{
+			r += cloud_cluster->points[h].r;
+			g += cloud_cluster->points[h].g;
+			b += cloud_cluster->points[h].b;
+
+		}
+		if (g > r + b)
+		{
+			if (debug) cout << "it is a shoe " << endl;
+			labels[0] = "shoe";
+
+		}
+		
+	}
 
 
 	int r = 0, g = 0, b = 0;
@@ -280,12 +306,15 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 		b = 255;
 		currentModel = birdCloud;
 		reducedcurrentModel = reducedbirdCloud;
+		currentModelNormals = birdNormals;
+
 	}
 	else if (labels[0] == "house")
 	{
 		b = 255;
 		currentModel = houseCloud;
 		reducedcurrentModel = reducedhouseCloud;
+		currentModelNormals = houseNormals;
 
 	}
 	else if (labels[0] == "cracker")
@@ -294,6 +323,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 		g = 255;
 		currentModel = crackerCloud;
 		reducedcurrentModel = reducedcrackerCloud;
+		currentModelNormals = crackerNormals;
 
 	}
 	else if (labels[0] == "can")
@@ -302,6 +332,8 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 		g = 255;
 		currentModel = canCloud;
 		reducedcurrentModel = reducedcanCloud;
+		currentModelNormals =canNormals;
+
 
 	}
 	else if (labels[0] == "shoe")
@@ -309,115 +341,199 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 		r = 255;
 		currentModel = shoeCloud;
 		reducedcurrentModel = reducedshoeCloud;
+		currentModelNormals = shoeNormals;
+
 
 	}
 
 	if (doAlignment)
 	{
 
+	
+		
+		
 		if (debug) cout << "alignment" << endl;
 
 
 
-		vector<Eigen::Matrix4f> finalTransformations;
-		vector<double> efs;
-		//int icpsetMaximumIterations = 50;
-		//float icpsetMaxCorrespondenceDistance = 0.2f;
-		pcl::IterativeClosestPoint<pcl::PointXYZRGBA, pcl::PointXYZRGBA> icp;
-		icp.setMaximumIterations(5);
-		//icp.setMaxCorrespondenceDistance(icpsetMaxCorrespondenceDistance);
-		//icp.setUseReciprocalCorrespondences(false);//
-		icp.setInputTarget(cloud_cluster);
-		icp.setInputSource(currentModel);
-		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr registered(new pcl::PointCloud<pcl::PointXYZRGBA>);
-		icp.align(*registered);
-		efs.push_back(icp.getEuclideanFitnessEpsilon());
-		//registeredModelClusteredKeyPoints.push_back(registered);
-		finalTransformations.push_back(icp.getFinalTransformation());
-		cout << "cluster " << j << " ";
-		if (icp.hasConverged())
+
+
+
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr alignedModel(new pcl::PointCloud<pcl::PointXYZRGBA>);
+		// Objects for storing the SHOT descriptors for the scene and model.
+		pcl::PointCloud<pcl::SHOT352>::Ptr sceneDescriptors(new pcl::PointCloud<pcl::SHOT352>());
+		pcl::PointCloud<pcl::SHOT352>::Ptr modelDescriptors(new pcl::PointCloud<pcl::SHOT352>());
+
+
+
+
+		// Note: here you would compute or load the descriptors for both
+		
+
+			pcl::SHOTEstimationOMP<pcl::PointXYZRGBA, pcl::Normal, pcl::SHOT352> describer;
+			describer.setRadiusSearch(0.05);
+			//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneSampledCloudPtr(&sceneSampledCloud);
+
+			describer.setInputCloud(cloud_cluster);
+			describer.setInputNormals(cluster_normal);
+			describer.setSearchSurface(cloud_cluster);
+			describer.compute(*sceneDescriptors);
+
+
+			describer.setInputCloud(reducedcurrentModel);
+			describer.setInputNormals(currentModelNormals);
+			describer.setSearchSurface(currentModel);
+			describer.compute(*modelDescriptors);
+
+
+		// Object for pose estimation.
+		pcl::SampleConsensusPrerejective<pcl::PointXYZRGBA, pcl::PointXYZRGBA, pcl::SHOT352> pose;
+		pose.setInputSource(reducedcurrentModel);
+		pose.setInputTarget(cloud_cluster);
+		pose.setSourceFeatures(modelDescriptors);
+		pose.setTargetFeatures(sceneDescriptors);
+		// Instead of matching a descriptor with its nearest neighbor, choose randomly between
+		// the N closest ones, making it more robust to outliers, but increasing time.
+		pose.setCorrespondenceRandomness(2);
+		// Set the fraction (0-1) of inlier points required for accepting a transformation.
+		// At least this number of points will need to be aligned to accept a pose.
+		pose.setInlierFraction(0.25f);
+		// Set the number of samples to use during each iteration (minimum for 6 DoF is 3).
+		pose.setNumberOfSamples(3);
+		// Set the similarity threshold (0-1) between edge lengths of the polygons. The
+		// closer to 1, the more strict the rejector will be, probably discarding acceptable poses.
+		pose.setSimilarityThreshold(0.6f);
+		// Set the maximum distance threshold between two correspondent points in source and target.
+		// If the distance is larger, the points will be ignored in the alignment process.
+		pose.setMaxCorrespondenceDistance(0.01f);
+
+		pose.align(*alignedModel);
+
+		if (pose.hasConverged())
 		{
-			cout << "is aligned" << endl;
+			Eigen::Matrix4f transformation = pose.getFinalTransformation();
+			Eigen::Matrix3f rotation = transformation.block<3, 3>(0, 0);
+			Eigen::Vector3f translation = transformation.block<3, 1>(0, 3);
+
+			std::cout << "Transformation matrix:" << std::endl << std::endl;
+			printf("\t\t    | %6.3f %6.3f %6.3f | \n", rotation(0, 0), rotation(0, 1), rotation(0, 2));
+			printf("\t\tR = | %6.3f %6.3f %6.3f | \n", rotation(1, 0), rotation(1, 1), rotation(1, 2));
+			printf("\t\t    | %6.3f %6.3f %6.3f | \n", rotation(2, 0), rotation(2, 1), rotation(2, 2));
+			std::cout << std::endl;
+			printf("\t\tt = < %0.3f, %0.3f, %0.3f >\n", translation(0), translation(1), translation(2));
 		}
-		else
-		{
-			cout << "not aligned" << endl;
-		}
-
-		double timeTaken = (double)(((double)(clock() - tStart)) / CLOCKS_PER_SEC);
-
-		// run algorithm on all scenes in the test folder and produce output files
-		// using the following format:  
-		// https://github.com/thodan/sixd_toolkit/blob/master/doc/sixd_2017_results_format.md
-		// XXXX_YY.yml
-		// XXXX: test image
-		// YY: object that is present in the image (e.g. bird)
-		// 6D pose is written to output file
-
-		/*string outputFileName = plyPath + "/" + colorSceneFilename + "_" + fileName4trdult + ".yml";
-	boost::iostreams::stream_buffer<boost::iostreams::file_sink> buf(outputFileName);
-	std::ostream osout(&buf);
-	cout << "Output File name: " << outputFileName << endl;*/
-
-
-		if (debug)cout << "showing result" << endl;
-		pcl::visualization::PCLVisualizer viewer3("clustered instances");
-		//viewer3.addPointCloud(birdCloud, "birdCloud");
-		//viewer3.addPointCloud(canCloud, "canCloud");
-		//viewer3.addPointCloud(shoeCloud, "shoeCloud");
-		for (size_t f = 0; f < registered->size(); f++)
-		{
-			registered->points[f].g = 0;
-			registered->points[f].b = 0;
-
-
-		}
-		viewer3.addPointCloud(registered, "registered");
-		viewer3.addPointCloud(cloud_filtered, "cloud");
-
-		//viewer3.addPointCloud(crackerCloud, "crackerCloud");
-		viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "registered");
-
-
-
-		while (!viewer3.wasStopped())
-		{
-			viewer3.spinOnce(100);
-
-
-		}
-
-
-		pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
-		pcl::PointCloud<pcl::Normal>::Ptr cloud_cluster_normals(new pcl::PointCloud<pcl::Normal>);
-		pcl::PointCloud<pcl::Normal>::Ptr current_model_normals(new pcl::PointCloud<pcl::Normal>);
-
-		ne.setKSearch(100);
-
-
-
-		ne.setInputCloud(cloud_cluster);
-		ne.compute(*cloud_cluster_normals);
+		else std::cout << "Did not converge." << std::endl;
 
 
 
 
 
 
-		pcl::SHOTEstimationOMP<pcl::PointXYZRGBA, pcl::Normal, pcl::SHOT352> describer;
-		describer.setRadiusSearch(0.05);
-		pcl::PointCloud<pcl::SHOT352>::Ptr cloud_cluster_Descriptors(new pcl::PointCloud<pcl::SHOT352>);
-		//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneSampledCloudPtr(&sceneSampledCloud);
-
-		describer.setInputCloud(cloud_cluster);
-		describer.setInputNormals(cloud_cluster_normals);
-		describer.setSearchSurface(cloud_cluster);
-		describer.compute(*cloud_cluster_Descriptors);
 
 
 
-		ne.setInputCloud(currentModel);
-		ne.compute(*current_model_normals);
+
+
+
+	//	vector<Eigen::Matrix4f> finalTransformations;
+	//	vector<double> efs;
+	//	//int icpsetMaximumIterations = 50;
+	//	//float icpsetMaxCorrespondenceDistance = 0.2f;
+	//	pcl::IterativeClosestPoint<pcl::PointXYZRGBA, pcl::PointXYZRGBA> icp;
+	//	icp.setMaximumIterations(5);
+	//	//icp.setMaxCorrespondenceDistance(icpsetMaxCorrespondenceDistance);
+	//	//icp.setUseReciprocalCorrespondences(false);//
+	//	icp.setInputTarget(cloud_cluster);
+	//	icp.setInputSource(currentModel);
+	//	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr registered(new pcl::PointCloud<pcl::PointXYZRGBA>);
+	//	icp.align(*registered);
+	//	efs.push_back(icp.getEuclideanFitnessEpsilon());
+	//	//registeredModelClusteredKeyPoints.push_back(registered);
+	//	finalTransformations.push_back(icp.getFinalTransformation());
+	//	cout << "cluster " << j << " ";
+	//	if (icp.hasConverged())
+	//	{
+	//		cout << "is aligned" << endl;
+	//	}
+	//	else
+	//	{
+	//		cout << "not aligned" << endl;
+	//	}
+
+	//	double timeTaken = (double)(((double)(clock() - tStart)) / CLOCKS_PER_SEC);
+
+	//	// run algorithm on all scenes in the test folder and produce output files
+	//	// using the following format:  
+	//	// https://github.com/thodan/sixd_toolkit/blob/master/doc/sixd_2017_results_format.md
+	//	// XXXX_YY.yml
+	//	// XXXX: test image
+	//	// YY: object that is present in the image (e.g. bird)
+	//	// 6D pose is written to output file
+
+	//	/*string outputFileName = plyPath + "/" + colorSceneFilename + "_" + fileName4trdult + ".yml";
+	//boost::iostreams::stream_buffer<boost::iostreams::file_sink> buf(outputFileName);
+	//std::ostream osout(&buf);
+	//cout << "Output File name: " << outputFileName << endl;*/
+
+
+	//	if (debug)cout << "showing result" << endl;
+	//	pcl::visualization::PCLVisualizer viewer3("clustered instances");
+	//	//viewer3.addPointCloud(birdCloud, "birdCloud");
+	//	//viewer3.addPointCloud(canCloud, "canCloud");
+	//	//viewer3.addPointCloud(shoeCloud, "shoeCloud");
+	//	for (size_t f = 0; f < registered->size(); f++)
+	//	{
+	//		registered->points[f].g = 0;
+	//		registered->points[f].b = 0;
+
+
+	//	}
+	//	viewer3.addPointCloud(registered, "registered");
+	//	viewer3.addPointCloud(cloud_filtered, "cloud");
+
+	//	//viewer3.addPointCloud(crackerCloud, "crackerCloud");
+	//	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "registered");
+
+
+
+	//	while (!viewer3.wasStopped())
+	//	{
+	//		viewer3.spinOnce(100);
+
+
+	//	}
+
+
+	//	pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
+	//	pcl::PointCloud<pcl::Normal>::Ptr cloud_cluster_normals(new pcl::PointCloud<pcl::Normal>);
+	//	pcl::PointCloud<pcl::Normal>::Ptr current_model_normals(new pcl::PointCloud<pcl::Normal>);
+
+	//	ne.setKSearch(100);
+
+
+
+	//	ne.setInputCloud(cloud_cluster);
+	//	ne.compute(*cloud_cluster_normals);
+
+
+
+
+
+
+	//	pcl::SHOTEstimationOMP<pcl::PointXYZRGBA, pcl::Normal, pcl::SHOT352> describer;
+	//	describer.setRadiusSearch(0.05);
+	//	pcl::PointCloud<pcl::SHOT352>::Ptr cloud_cluster_Descriptors(new pcl::PointCloud<pcl::SHOT352>);
+	//	//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneSampledCloudPtr(&sceneSampledCloud);
+
+	//	describer.setInputCloud(cloud_cluster);
+	//	describer.setInputNormals(cloud_cluster_normals);
+	//	describer.setSearchSurface(cloud_cluster);
+	//	describer.compute(*cloud_cluster_Descriptors);
+
+
+
+	//	ne.setInputCloud(currentModel);
+	//	ne.compute(*current_model_normals);
 
 
 
@@ -703,7 +819,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 
 	pcl::UniformSampling<pcl::PointXYZRGBA> uniform_sampling;
 	uniform_sampling.setInputCloud(cloud);
-	uniform_sampling.setRadiusSearch(0.002);
+	uniform_sampling.setRadiusSearch(0.0006);
 	uniform_sampling.filter(*cloud_filtered);
 
 
@@ -766,7 +882,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 			hull.setInputCloud(cloud_plane);
 			hull.reconstruct(*hull_points);
 
-			if (hull.getDimension() == 2)
+			if (false)//(hull.getDimension() == 2)
 			{
 				if (debug) cout << "using prism to remove outlier" << endl;
 				pcl::ExtractPolygonalPrismData<pcl::PointXYZRGBA> prism;
@@ -814,6 +930,19 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 	int j = 0;
 	vector<	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> finalClouds;// (new pcl::PointCloud<pcl::PointXYZRGBA>);
 
+	pcl::PointCloud<pcl::Normal>::Ptr cloud_filtered_normal(new pcl::PointCloud<pcl::Normal>);
+	pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
+
+	ne.setKSearch(100);
+
+
+
+	ne.setInputCloud(cloud_filtered);
+	ne.compute(*cloud_filtered_normal);
+
+
+
+
 	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
 	{
 
@@ -823,7 +952,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 
 
 
-		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_cluster = handleDetectedCluster(it, cloud_filtered, j);
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_cluster = handleDetectedCluster(it, cloud_filtered, j,  cloud_filtered_normal);
 
 		if (cloud_cluster != NULL)
 		{
@@ -1040,6 +1169,31 @@ int main(int argc, char** argv)
 		grid.filter(*reducedcrackerCloud);
 
 
+
+
+		pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
+
+		ne.setKSearch(100);
+
+
+
+		ne.setInputCloud(birdCloud);
+		ne.compute(*birdNormals);
+
+
+		ne.setInputCloud(shoeCloud);
+		ne.compute(*shoeNormals);
+
+		ne.setInputCloud(canCloud);
+		ne.compute(*canNormals);
+
+		ne.setInputCloud(crackerCloud);
+		ne.compute(*crackerNormals);
+
+		ne.setInputCloud(houseCloud);
+		ne.compute(*houseNormals);
+
+
 	}
 
 
@@ -1072,7 +1226,7 @@ int main(int argc, char** argv)
 
 		/*pcl::PointCloud<pcl::PointXYZRGBA>::Ptr scene(new pcl::PointCloud<pcl::PointXYZRGBA>);
 		//"C:\\Users\\ahmad\\Desktop\\scene\\challenge1_5-3.ply"
-		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>("C:\\Users\\ahmad\\Desktop\\scene\\challenge1_1-1.ply", *scene) == -1){ PCL_ERROR("Couldn't read file scene.ply \n"); return (-1); }
+		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>("C:\\Users\\ahmad\\Desktop\\scene\\challenge1_4-0.ply", *scene) == -1){ PCL_ERROR("Couldn't read file scene.ply \n"); return (-1); }
 		std::cout << "Loaded" << scene->width * scene->height << "points" << std::endl;
 
 		pcl::visualization::PCLVisualizer viewer3("scene instances");
