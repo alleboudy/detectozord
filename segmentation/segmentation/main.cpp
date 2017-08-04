@@ -298,24 +298,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr currentModel(new pcl::PointCloud<pcl::PointXYZRGBA>);
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr reducedcurrentModel(new pcl::PointCloud<pcl::PointXYZRGBA>);
 	pcl::PointCloud<pcl::Normal>::Ptr currentModelNormals(new pcl::PointCloud<pcl::Normal>);
-	if (labels[0] == "bird")//sorry I'm doing this, I'm really desperate now -.-
-	{
-		int r = 0, g = 0, b = 0;
-		for (size_t h = 0; h < cloud_cluster->size(); h++)
-		{
-			r += cloud_cluster->points[h].r;
-			g += cloud_cluster->points[h].g;
-			b += cloud_cluster->points[h].b;
-
-		}
-		if (g > r + b)
-		{
-			if (debug) cout << "it is a shoe " << endl;
-			labels[0] = "shoe";
-
-		}
-
-	}
+	
 	string objID = "";
 
 	int r = 0, g = 0, b = 0;
@@ -430,7 +413,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 		pose.setNumberOfSamples(3);
 		// Set the similarity threshold (0-1) between edge lengths of the polygons. The
 		// closer to 1, the more strict the rejector will be, probably discarding acceptable poses.
-		pose.setSimilarityThreshold(0.01f);
+		pose.setSimilarityThreshold(0.6f);
 		// Set the maximum distance threshold between two correspondent points in source and target.
 		// If the distance is larger, the points will be ignored in the alignment process.
 		pose.setMaxCorrespondenceDistance(0.01f);
