@@ -1,10 +1,11 @@
-# Point net work is being done here ->
-https://github.com/alleboudy/pointnet
-Classification
-OneVsAllClassification
-pose regresssion
+# This repository is a toolbox for using pcl and tensorflow in computer vision 
+# Segmentation is a pipeline that utilizes pcl to grab 3d pointcloud from a depth sensor, apply SAC segmentation to remove large flat surfaces, exctract candidate instances from the scene, classify them using pointnet into predefined set of objects then estimate their poses through pcl SampleConsensusPrerejective 
+TODO: refine the pose estimation step and report only the yml of the highest convergence score.
 
-#Challenge 1 notes - UPDATED:
+# PointNet work is being done here ->
+https://github.com/alleboudy/pointnet Classification, OneVsAllClassification, and pose regresssion
+
+# Challenge 1 notes - UPDATED:
 Unfortunately, we haven't finished the classifier yet
 
 please disable the viewers if necessary for a faster running, sorry didn't make it in time before the deadline
@@ -17,10 +18,10 @@ Thank you.
 
 
 
-#Challenge1 notes:
+# Challenge1 notes:
 
 
-##Strategy:
+## Strategy:
 
 Our pipeline under challenge_I is used to detect models in given scenes
 
@@ -29,7 +30,7 @@ For each model, a set of parameters are to be tuned
 Given a model to detect, we use PointNet to first classify and recognize the model to load the correct set of parameters for the detection pipeline
 
 
-##TODO(in progress):
+## TODO(in progress):
 
 Train the PointNet model on the data provided under train
 
@@ -42,7 +43,7 @@ Train the PointNet model on the data provided under train
 5- still need to find good parameters for house, bond, pot and shoe :S
 
 
-##TODO(next):
+## TODO(next):
 
 We are matching 3d models to 2.5d scenes, which is not practically good, we need to instead take parts of the models for the matching, 
 
