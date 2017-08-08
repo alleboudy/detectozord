@@ -1,3 +1,6 @@
+
+![El Detectozord](https://github.com/alleboudy/pointnet/blob/master/doc/eldetectozord.png?raw=true "El detectoZord")
+
 # This repository is a toolbox for using pcl and tensorflow in computer vision 
 # Segmentation is a pipeline that utilizes pcl to grab 3d pointcloud from a depth sensor, apply SAC segmentation to remove large flat surfaces, exctract candidate instances from the scene, classify them using pointnet into predefined set of objects then estimate their poses through pcl SampleConsensusPrerejective 
 TODO: refine the pose estimation step and report only the yml of the highest convergence score.
