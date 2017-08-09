@@ -8,6 +8,9 @@
 # PointNet work is being done here ->
 https://github.com/alleboudy/pointnet Classification, OneVsAllClassification, and pose regresssion
 
+## In /utils you can fibd methods to create point clouds .ply files from given RGB D images, it does the translation to origin and sets the clouds in unit bounding box which is a mandatory preprocessing step for pointnet training.
+
+## more details about the exercises will be added later 
 ### Challenge 1 notes - UPDATED:
 Unfortunately, we haven't finished the classifier yet
 
