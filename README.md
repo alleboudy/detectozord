@@ -1,11 +1,14 @@
 
 ![El Detectozord](https://github.com/alleboudy/pointnet/blob/master/doc/eldetectozord.png?raw=true "El detectoZord")
 
-# This repository is a toolbox for using pcl and tensorflow in computer vision(Apologies for the experimental code)
-## Segmentation is a pipeline that utilizes pcl to grab 3d pointcloud from a depth sensor, apply SAC segmentation to remove large flat surfaces, exctract candidate instances from the scene via pcl euclidean cluster extraction, classify them using pointnet into predefined set of objects then estimate their poses through pcl SampleConsensusPrerejective 
-### TODO: refine the pose estimation step and report only the yml of the highest convergence score.
+## This repository is a toolbox for using pcl and tensorflow in computer vision(Apologies for the experimental code)
+### "Segmentation" is a pipeline that utilizes pcl to grab 3d pointcloud from a depth sensor, apply SAC segmentation to remove large flat surfaces, exctract candidate instances from the scene via pcl euclidean cluster extraction, classify them using pointnet into predefined set of objects then estimate their poses through pcl SampleConsensusPrerejective 
+### running segmentation requires first clone the pointnet forked repository "please read down for more info" into segmentation/data/pointnet and  running the flask classification server onlineClassify.py 
 
-# PointNet work is being done here ->
+## TODO: refine the pose estimation step and report only the yml of the highest convergence score.
+Also, cleaning up and moving flags outside of the code ex: in main.cpp live=true will grab RGB and depth images from a connected OpenNI sensor instead of loading static scenes 
+
+## PointNet work is being done here ->
 https://github.com/alleboudy/pointnet Classification, OneVsAllClassification, and pose regresssion
 
 ## In /utils you can fibd methods to create point clouds .ply files from given RGB D images, it does the translation to origin and sets the clouds in unit bounding box which is a mandatory preprocessing step for pointnet training.
