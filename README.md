@@ -4,12 +4,44 @@
 ## This repository is a toolbox for using pcl and tensorflow in computer vision(Apologies for the experimental code)
 ### "Segmentation" is a pipeline that utilizes pcl to grab 3d pointcloud from a depth sensor, apply SAC segmentation to remove large flat surfaces, exctract candidate instances from the scene via pcl euclidean cluster extraction, classify them using pointnet into predefined set of objects then estimate their poses through pcl SampleConsensusPrerejective 
 ### running segmentation requires first clone the pointnet forked repository "please read down for more info" into segmentation/data/pointnet and  running the flask classification server onlineClassify.py 
+## prerequisites used:
+```
+python 3.5 x64
 
-1- install tensorflow v 1.1 was used [pip install tesorflow==1.1], later versions might have a problem restoring the checkpoints
-2- pip install requests [needed for calling the online classifier] 
-3- install opencv, PCL and its dependencies [for windows useres, check out: http://unanancyowen.com/en/pcl181] 
-4- run onlineClassify.py [the classification flask app] [feel free to change the pipelineCode in the script to change the model used] 
-5- build and run segmentation, to switch it to a realtime set the boolean flag in the main.cpp live=true; [yup, I need to clean that, sorry xD]
+https://www.python.org/downloads/release/python-350/
+```
+```
+pip install --upgrade https://storage.googleapis.com/tensorflow/windows/cpu/tensorflow-1.0.0-cp35-cp35m-win_amd64.whl
+```
+```
+pip install scipy
+```
+```
+pip install image
+```
+```
+pip install matplotlib
+```
+```
+pip install flask
+```
+
+### Running the Segmentation pipeline
+```
+
+1- install tensorflow v 1.0  was used [pip install tesorflow==1.1], later versions might have a problem restoring the checkpoints
+
+2- pip install requests  [needed for calling the online classifier]
+
+3- install opencv, PCL and its dependencies [for windows useres, check out: http://unanancyowen.com/en/pcl181]
+
+4- run onlineClassify.py [the classification flask app] [feel free to change the pipelineCode in the script to change the model used <currently 2 is not available!>]
+
+5- build and run segmentation, to switch it to a realtime set the boolean flag in the main.cpp live=true;
+
+[yup, I need to clean that and get the flags out as parameters, sorry xD]
+```
+
 
 ## TODO: refine the pose estimation step and report only the yml of the highest convergence score.
 Also, cleaning up and moving flags outside of the code ex: in main.cpp live=true will grab RGB and depth images from a connected OpenNI sensor instead of loading static scenes 
