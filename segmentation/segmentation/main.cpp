@@ -63,10 +63,10 @@ typedef pcl::SHOT352 DescriptorType;
 
 bool debug = false;
 bool live = false;
-bool doAlignment = true;
+bool doAlignment = false;
 std::string projectSrcDir = PROJECT_SOURCE_DIR;
 
-string locationForOutputClouds = projectSrcDir + "/data/temoclouds/";//tep location for temp out clouds passed for classification
+string locationForOutputClouds = projectSrcDir + "/data/temoclouds/";// location for temp out clouds passed for classification
 // Read in the cloud data
 
 string path2classifier = projectSrcDir + "/data/pointnet/";//where my fork of pointnet exists
@@ -247,22 +247,22 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 	if (cloud_cluster->size() < 512)
 	{
 		return NULL;
-		pcl::MovingLeastSquares<pcl::PointXYZRGBA, pcl::PointXYZRGBA> mls;
-		mls.setInputCloud(cloud_cluster);
-		mls.setSearchRadius(0.03);
-		mls.setPolynomialFit(true);
-		mls.setPolynomialOrder(2);
-		mls.setUpsamplingMethod(pcl::MovingLeastSquares<pcl::PointXYZRGBA, pcl::PointXYZRGBA>::SAMPLE_LOCAL_PLANE);
-		mls.setUpsamplingRadius(0.01);// has 2 be larger than setUpsamplingStepSize
-		mls.setUpsamplingStepSize(0.008);//smaller increases the generated points
-		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_smoothed(new pcl::PointCloud<pcl::PointXYZRGBA>());
-		mls.process(*cloud_cluster);
-		if (debug) cout << "upsampled cloud" << cloud_cluster->size() << endl;
+		//pcl::MovingLeastSquares<pcl::PointXYZRGBA, pcl::PointXYZRGBA> mls;
+		//mls.setInputCloud(cloud_cluster);
+		//mls.setSearchRadius(0.03);
+		//mls.setPolynomialFit(true);
+		//mls.setPolynomialOrder(2);
+		//mls.setUpsamplingMethod(pcl::MovingLeastSquares<pcl::PointXYZRGBA, pcl::PointXYZRGBA>::SAMPLE_LOCAL_PLANE);
+		//mls.setUpsamplingRadius(0.01);// has 2 be larger than setUpsamplingStepSize
+		//mls.setUpsamplingStepSize(0.008);//smaller increases the generated points
+		//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_smoothed(new pcl::PointCloud<pcl::PointXYZRGBA>());
+		//mls.process(*cloud_cluster);
+		//if (debug) cout << "upsampled cloud" << cloud_cluster->size() << endl;
 	}
-	if (cloud_cluster->size() == 0)
-	{
-		return NULL;
-	}
+	//if (cloud_cluster->size() == 0)
+	//{
+	//	return NULL;
+	//}
 
 
 
@@ -304,6 +304,8 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 	int r = 0, g = 0, b = 0;
 	if (labels[0] == "bird")
 	{
+		cout << "bird" << endl;
+
 		r = 255;
 		b = 255;
 		objID = "01";
@@ -314,6 +316,8 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 	}
 	else if (labels[0] == "house")
 	{
+		cout << "house" << endl;
+
 		b = 255;
 		objID = "05";
 
@@ -324,6 +328,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 	}
 	else if (labels[0] == "cracker")
 	{
+		cout << "cracker" << endl;
 		b = 255;
 		g = 255;
 		objID = "04";
@@ -335,6 +340,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 	}
 	else if (labels[0] == "can")
 	{
+		cout << "can" << endl;
 
 		g = 255;
 		objID = "03";
@@ -347,6 +353,8 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 	}
 	else if (labels[0] == "shoe")
 	{
+		cout << "shoe" << endl;
+
 		r = 255;
 		objID = "06";
 
@@ -847,7 +855,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 
 
 
-	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr reducedSceneCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+	//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr reducedSceneCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
 
 
@@ -857,7 +865,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 
 
 
-	pcl::copyPointCloud(*cloud, *reducedSceneCloud);
+	//pcl::copyPointCloud(*cloud, *reducedSceneCloud);
 
 
 	//pcl::visualization::PCLVisualizer viewer3("clustered instances");
@@ -942,7 +950,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 			// hull.setDimension (2); // not necessarily needed, but we need to check the dimensionality of the output
 			hull.setInputCloud(cloud_plane);
 			hull.reconstruct(*hull_points);
-
+/*
 			if (false)//(hull.getDimension() == 2)
 			{
 				if (debug) cout << "using prism to remove outlier" << endl;
@@ -955,7 +963,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 			}
 			else
 				PCL_ERROR("The input cloud does not represent a planar surface.\n");
-
+			*/
 
 		}
 
