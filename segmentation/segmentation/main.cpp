@@ -132,8 +132,7 @@ std::string exec(string path2classifier, string path2plyFile, string flag, std::
 		if (fgets(buffer.data(), 128, pipe.get()) != NULL)
 			result += buffer.data();
 	}
-	//if (debug) cout << "El classification yastaaaaaaa!!!" << endl;;
-	//if (debug) cout << result << endl;
+
 	char delim = '\n';
 	vector<string>alllines;
 	alllines = split(result, delim);
@@ -152,15 +151,15 @@ std::string exec(string path2classifier, string path2plyFile, string flag, std::
 }
 
 // Convert to colored depth image
-cv::Mat convColoredDepth(cv::Mat& depthImg, float minThresh = 0, float maxThresh = 0){
+cv::Mat convColoredDepth(cv::Mat& depthImg, float minThresh = 0, float maxThresh = 0) {
 	cv::Mat coloredDepth = depthImg.clone();
 
 	double min;
 	double max;
-	if (minThresh == 0 && maxThresh == 0){
+	if (minThresh == 0 && maxThresh == 0) {
 		cv::minMaxIdx(depthImg, &min, &max);
 	}
-	else{
+	else {
 		min = minThresh;
 		max = maxThresh;
 	}
@@ -176,7 +175,7 @@ bool savePointCloudsPLY(string filename, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
 {
 	std::ofstream fout;
 	fout.open(filename.c_str());
-	if (fout.fail()){
+	if (fout.fail()) {
 		cerr << "file open error:" << filename << endl;
 		return false;
 	}
@@ -202,7 +201,7 @@ bool savePointCloudsPLY(string filename, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
 	fout << "property uchar alpha" << endl;
 	fout << "end_header" << endl;
 
-	for (int i = 0; i < pointNum; i++){
+	for (int i = 0; i < pointNum; i++) {
 
 
 
@@ -221,7 +220,7 @@ bool savePointCloudsPLY(string filename, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
 }
 
 
-pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::PointIndices>::const_iterator it, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_filtered, int j, pcl::PointCloud<pcl::Normal>::Ptr cloud_filtered_normal){
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::PointIndices>::const_iterator it, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_filtered, int j, pcl::PointCloud<pcl::Normal>::Ptr cloud_filtered_normal) {
 	clock_t tStart = clock();
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGBA>);
@@ -236,13 +235,9 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 	if (debug) cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size() << " data points." << std::endl;
 	std::stringstream ss;
 	ss << "cloud_cluster_" << j << ".pcd";
-	/*if (cloud_cluster->size() < 500)
-	{
-	return NULL;
-	if (debug) cout << "skipping instance" << endl;
-	}*/
 
-	//densifying the clouds
+
+	//densifying the clouds?
 
 	if (cloud_cluster->size() < 512)
 	{
@@ -259,10 +254,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 		//mls.process(*cloud_cluster);
 		//if (debug) cout << "upsampled cloud" << cloud_cluster->size() << endl;
 	}
-	//if (cloud_cluster->size() == 0)
-	//{
-	//	return NULL;
-	//}
+
 
 
 
@@ -298,7 +290,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr currentModel(new pcl::PointCloud<pcl::PointXYZRGBA>);
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr reducedcurrentModel(new pcl::PointCloud<pcl::PointXYZRGBA>);
 	pcl::PointCloud<pcl::Normal>::Ptr currentModelNormals(new pcl::PointCloud<pcl::Normal>);
-	
+
 	string objID = "";
 
 	int r = 0, g = 0, b = 0;
@@ -469,16 +461,16 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 				std::cerr << "path2output created: " << path2output << std::endl;
 			}
 
-			string outputFileName = path2output + "/" + colorSceneFilename + "_" + objID +"__"+ to_string(j) + ".yml";
+			string outputFileName = path2output + "/" + colorSceneFilename + "_" + objID + "__" + to_string(j) + ".yml";
 
-			if (debug){
+			if (debug) {
 				cout << "outputFileName" << outputFileName << endl;
 				cout << "colorSceneFilename" << colorSceneFilename << endl;
 				cout << "path2output" << path2output << endl;
 
 			}
 			boost::replace_all(outputFileName, "rgb\\", "");
-			if (debug){
+			if (debug) {
 				cout << "outputFileName" << outputFileName << endl;
 			}
 			boost::iostreams::stream_buffer<boost::iostreams::file_sink> buf(outputFileName);
@@ -489,8 +481,6 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 
 
 
-
-
 		}
 		else std::cout << "Did not converge." << std::endl;
 
@@ -498,323 +488,11 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 
 
 
-
-
-
-
-
-
-
-		//	vector<Eigen::Matrix4f> finalTransformations;
-		//	vector<double> efs;
-		//	//int icpsetMaximumIterations = 50;
-		//	//float icpsetMaxCorrespondenceDistance = 0.2f;
-		//	pcl::IterativeClosestPoint<pcl::PointXYZRGBA, pcl::PointXYZRGBA> icp;
-		//	icp.setMaximumIterations(5);
-		//	//icp.setMaxCorrespondenceDistance(icpsetMaxCorrespondenceDistance);
-		//	//icp.setUseReciprocalCorrespondences(false);//
-		//	icp.setInputTarget(cloud_cluster);
-		//	icp.setInputSource(currentModel);
-		//	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr registered(new pcl::PointCloud<pcl::PointXYZRGBA>);
-		//	icp.align(*registered);
-		//	efs.push_back(icp.getEuclideanFitnessEpsilon());
-		//	//registeredModelClusteredKeyPoints.push_back(registered);
-		//	finalTransformations.push_back(icp.getFinalTransformation());
-		//	cout << "cluster " << j << " ";
-		//	if (icp.hasConverged())
-		//	{
-		//		cout << "is aligned" << endl;
-		//	}
-		//	else
-		//	{
-		//		cout << "not aligned" << endl;
-		//	}
-
-		//	double timeTaken = (double)(((double)(clock() - tStart)) / CLOCKS_PER_SEC);
-
-		//	// run algorithm on all scenes in the test folder and produce output files
-		//	// using the following format:  
-		//	// https://github.com/thodan/sixd_toolkit/blob/master/doc/sixd_2017_results_format.md
-		//	// XXXX_YY.yml
-		//	// XXXX: test image
-		//	// YY: object that is present in the image (e.g. bird)
-		//	// 6D pose is written to output file
-
-		//	/*string outputFileName = plyPath + "/" + colorSceneFilename + "_" + fileName4trdult + ".yml";
-		//boost::iostreams::stream_buffer<boost::iostreams::file_sink> buf(outputFileName);
-		//std::ostream osout(&buf);
-		//cout << "Output File name: " << outputFileName << endl;*/
-
-
-		//	if (debug)cout << "showing result" << endl;
-		//	pcl::visualization::PCLVisualizer viewer3("clustered instances");
-		//	//viewer3.addPointCloud(birdCloud, "birdCloud");
-		//	//viewer3.addPointCloud(canCloud, "canCloud");
-		//	//viewer3.addPointCloud(shoeCloud, "shoeCloud");
-		//	for (size_t f = 0; f < registered->size(); f++)
-		//	{
-		//		registered->points[f].g = 0;
-		//		registered->points[f].b = 0;
-
-
-		//	}
-		//	viewer3.addPointCloud(registered, "registered");
-		//	viewer3.addPointCloud(cloud_filtered, "cloud");
-
-		//	//viewer3.addPointCloud(crackerCloud, "crackerCloud");
-		//	viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "registered");
-
-
-
-		//	while (!viewer3.wasStopped())
-		//	{
-		//		viewer3.spinOnce(100);
-
-
-		//	}
-
-
-		//	pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
-		//	pcl::PointCloud<pcl::Normal>::Ptr cloud_cluster_normals(new pcl::PointCloud<pcl::Normal>);
-		//	pcl::PointCloud<pcl::Normal>::Ptr current_model_normals(new pcl::PointCloud<pcl::Normal>);
-
-		//	ne.setKSearch(100);
-
-
-
-		//	ne.setInputCloud(cloud_cluster);
-		//	ne.compute(*cloud_cluster_normals);
-
-
-
-
-
-
-		//	pcl::SHOTEstimationOMP<pcl::PointXYZRGBA, pcl::Normal, pcl::SHOT352> describer;
-		//	describer.setRadiusSearch(0.05);
-		//	pcl::PointCloud<pcl::SHOT352>::Ptr cloud_cluster_Descriptors(new pcl::PointCloud<pcl::SHOT352>);
-		//	//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneSampledCloudPtr(&sceneSampledCloud);
-
-		//	describer.setInputCloud(cloud_cluster);
-		//	describer.setInputNormals(cloud_cluster_normals);
-		//	describer.setSearchSurface(cloud_cluster);
-		//	describer.compute(*cloud_cluster_Descriptors);
-
-
-
-		//	ne.setInputCloud(currentModel);
-		//	ne.compute(*current_model_normals);
-
-
-
-
-
-
-
-
-		//pcl::PointCloud<pcl::SHOT352>::Ptr modelDescriptors(new pcl::PointCloud<pcl::SHOT352>);
-		////pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelSampledCloudPtr(&modelSampledCloud);
-		//describer.setRadiusSearch(0.02);
-
-		//describer.setInputCloud(reducedcurrentModel);
-		//describer.setInputNormals(current_model_normals);
-		//describer.setSearchSurface(currentModel);
-		//describer.compute(*modelDescriptors);
-
-
-
-		//pcl::CorrespondencesPtr model_scene_corrs(new pcl::Correspondences());
-		//pcl::KdTreeFLANN<pcl::SHOT352> match_search;
-		//match_search.setInputCloud(modelDescriptors);
-		//std::vector<int> modelKPindices;
-		//std::vector<int> sceneKPindices;
-
-		//for (size_t i = 0; i < cloud_cluster_Descriptors->size(); ++i)
-		//{
-		//	std::vector<int> neigh_indices(1);
-		//	std::vector<float> neigh_sqr_dists(1);
-
-		//	if (!pcl_isfinite(cloud_cluster_Descriptors->at(i).descriptor[0])) //skipping NaNs
-		//	{
-		//		continue;
-		//	}
-
-		//	int found_neighs = match_search.nearestKSearch(cloud_cluster_Descriptors->at(i), 1, neigh_indices, neigh_sqr_dists);
-		//	if (found_neighs == 1 && neigh_sqr_dists[0] < 0.25)
-		//	{
-		//		pcl::Correspondence corr(neigh_indices[0], static_cast<int> (i), neigh_sqr_dists[0]);
-		//		model_scene_corrs->push_back(corr);
-		//		modelKPindices.push_back(corr.index_query);
-		//		sceneKPindices.push_back(corr.index_match);
-		//	}
-		//}
-		//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelKeyPoints(new pcl::PointCloud<pcl::PointXYZRGBA>());
-		//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr sceneKeyPoints(new pcl::PointCloud<pcl::PointXYZRGBA>());
-		//pcl::copyPointCloud(*currentModel, modelKPindices, *modelKeyPoints);
-		//pcl::copyPointCloud(*cloud_cluster, sceneKPindices, *sceneKeyPoints);
-
-		//std::cout << "model_scene_corrs: " << model_scene_corrs->size() << std::endl;
-
-
-
-		//pcl::GeometricConsistencyGrouping<pcl::PointXYZRGBA, pcl::PointXYZRGBA> gc_clusterer;
-		//gc_clusterer.setGCSize(0.007); //1st param
-		//gc_clusterer.setGCThreshold(20); //2nd param//minimum cluster size, shouldn't be less than 3
-		//gc_clusterer.setInputCloud(currentModel);
-		//gc_clusterer.setSceneCloud(cloud_cluster);
-		//gc_clusterer.setModelSceneCorrespondences(model_scene_corrs);
-		//std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> >
-		//	rototranslations;
-		//std::vector < pcl::Correspondences > clustered_corrs;
-		//gc_clusterer.recognize(rototranslations, clustered_corrs);
-		//if (rototranslations.size() <= 0)
-		//{
-		//	cout << "no instances found, exiting" << endl;
-		//	return NULL;
-		//}
-		//else
-		//{
-		//	cout << "number of instances: " << rototranslations.size() << endl << endl;
-
-
-		//}
-		//std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr> instances;
-		//for (size_t i = 0; i < rototranslations.size(); ++i)
-		//{
-		//	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr rotated_model(new pcl::PointCloud<pcl::PointXYZRGBA>());
-		//	pcl::transformPointCloud(*currentModel, *rotated_model, rototranslations[i]);
-		//	instances.push_back(rotated_model);
-		//}
-		//cout << "f) Refine pose of each instance by using ICP" << endl;
-
-		//std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr> registeredModelClusteredKeyPoints;// (new pcl::PointCloud<pcl::PointXYZRGBA>());
-		//vector<Eigen::Matrix4f> finalTransformations;
-		//vector<double> efs;
-		//for (size_t i = 0; i < rototranslations.size(); ++i)
-		//{
-		//	pcl::IterativeClosestPoint<pcl::PointXYZRGBA, pcl::PointXYZRGBA> icp;
-		//	icp.setMaximumIterations(5);
-		//	//icp.setMaxCorrespondenceDistance(0.02);
-		//	//icp.setUseReciprocalCorrespondences(setreciprocal);//
-		//	icp.setInputTarget(cloud_cluster);
-		//	icp.setInputSource(instances[i]);
-		//	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr registered(new pcl::PointCloud<pcl::PointXYZRGBA>);
-		//	icp.align(*registered);
-		//	efs.push_back(icp.getEuclideanFitnessEpsilon());
-		//	registeredModelClusteredKeyPoints.push_back(registered);
-		//	finalTransformations.push_back(icp.getFinalTransformation());
-		//	cout << "cluster " << i << " ";
-		//	if (icp.hasConverged())
-		//	{
-		//		cout << "is aligned" << endl;
-		//	}
-		//	else
-		//	{
-		//		cout << "not aligned" << endl;
-		//	}
-		//}
-
-
-
-		///*pcl::GlobalHypothesesVerification<pcl::PointXYZRGBA, pcl::PointXYZRGBA> GoHv;
-		//GoHv.setSceneCloud(cloud_cluster);
-		//GoHv.addModels(registeredModelClusteredKeyPoints, true);
-		//GoHv.setInlierThreshold(0.05);
-		//GoHv.setOcclusionThreshold(0.01);
-		//GoHv.setRegularizer(3);
-		//GoHv.setRadiusClutter(0.03);
-		//GoHv.setClutterRegularizer(5);
-		//GoHv.setDetectClutter(true);
-
-
-		//GoHv.setRadiusNormals(100);
-		//GoHv.verify();
-		//std::vector<bool> mask_hv;
-
-		//GoHv.getMask(mask_hv);*/
-
-
-
-
-
-
-		//cout << "Visualize detection result" << endl;
-		//pcl::visualization::PCLVisualizer viewer("3d viewer");
-		////		viewer.addPointCloud(reducedSceneCloud, "scene");
-		////viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "scene");
-
-
-		////	double timeTaken = (double)(((double)(clock() - tStart)) / CLOCKS_PER_SEC);
-
-		//// run algorithm on all scenes in the test folder and produce output files
-		//// using the following format:  
-		//// https://github.com/thodan/sixd_toolkit/blob/master/doc/sixd_2017_results_format.md
-		//// XXXX_YY.yml
-		//// XXXX: test image
-		//// YY: object that is present in the image (e.g. bird)
-		//// 6D pose is written to output file
-
-		///*string outputFileName = dirChallenge.string() + "/" + colorSceneFilename + "_" + fileName4trdult + ".yml";
-		//boost::iostreams::stream_buffer<boost::iostreams::file_sink> buf(outputFileName);
-		//std::ostream osout(&buf);
-		//cout << "Output File name: " << outputFileName << endl;*/
-
-		//viewer.addPointCloud(cloud_filtered, "cloud_filtered");
-		////viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 0, 1, "sceneKeyPoints");
-
-		//for (size_t i = 0; i < registeredModelClusteredKeyPoints.size(); i++)
-		//{
-
-		//	
-		//		// output transformation matrix 
-		//		// TODO: find out how to compute score
-		//		double score = 0;//efs[i];
-
-		//		//	viewer.addPointCloud(instances[i], "instanceb4reg" + to_string(i));
-		//		//	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 0, 1, "instanceb4reg" + to_string(i));
-
-		//		viewer.addPointCloud(registeredModelClusteredKeyPoints[i], "instance" + to_string(i));
-
-		//		string rotationValues = to_string(finalTransformations[i](0, 1))
-		//			+ ", " + to_string(finalTransformations[i](0, 2))
-		//			+ ", " + to_string(finalTransformations[i](1, 0))
-		//			+ ", " + to_string(finalTransformations[i](1, 1))
-		//			+ ", " + to_string(finalTransformations[i](1, 2))
-		//			+ ", " + to_string(finalTransformations[i](2, 0))
-		//			+ ", " + to_string(finalTransformations[i](2, 1))
-		//			+ ", " + to_string(finalTransformations[i](2, 2));
-
-		//		string translationValues = to_string(finalTransformations[i](0, 3))
-		//			+ ", " + to_string(finalTransformations[i](1, 3))
-		//			+ ", " + to_string(finalTransformations[i](2, 3));
-
-
-
-		//		/*// out writes to file XXXX_YY.txt
-		//		osout << "run_time: " + to_string(timeTaken) + "\r\n";
-		//		osout << "ests:\r\n";
-		//		osout << "- {score: " + to_string(score) + ", R : [" + rotationValues + "], t: [" + translationValues + "]}";
-		//		cout << "instance" + to_string(i) + " good" << endl;*/
-
-		//		viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "instance" + to_string(i));
-		//		viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY, 0.2, "instance" + to_string(i));
-
-		//	
-		//	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance" + to_string(i));
-
-		//}
-
-
-		//while (!viewer.wasStopped())
-		//{
-		//	viewer.spinOnce(100);
-		//}
 	}
 
 
 
 
-	//}
 
 
 
@@ -837,55 +515,12 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 
 }
 
-pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud){
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud) {
 
 
-	
+
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_f(new pcl::PointCloud<pcl::PointXYZRGBA>);
-	/*string msg = "Couldn't read file C:\\Users\\ahmad\\Downloads\\challenge2_val\\scenesClouds\\05-0.ply \n";
-	if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>("C:\\Users\\ahmad\\Desktop\\testscenes\\challenge1_5-1.ply", *cloud) == -1){ PCL_ERROR(msg.c_str()); return (-1); }
-	if(debug) cout << "Loaded" << cloud->width * cloud->height << "points" << std::endl;
-
-	*/
-
-
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGBA>);
-
-
-
-
-
-	//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr reducedSceneCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
-
-
-
-
-
-
-
-
-
-	//pcl::copyPointCloud(*cloud, *reducedSceneCloud);
-
-
-	//pcl::visualization::PCLVisualizer viewer3("clustered instances");
-	//viewer3.addPointCloud(reducedSceneCloud, "scene");
-	/*
-	while (!viewer3.wasStopped())
-	{
-	viewer3.spinOnce(100);
-	//		viewer4.spinOnce(100);
-
-	}
-	*/
-
-
-	// Create the filtering object: downsample the dataset using a leaf size of 1cm
-	//pcl::VoxelGrid<pcl::PointXYZRGBA> vg;
-	//vg.setInputCloud(cloud);
-	//vg.setLeafSize(0.0009f, 0.0009f, 0.0009f);
-	//vg.filter(*cloud_filtered);
-
 	pcl::UniformSampling<pcl::PointXYZRGBA> uniform_sampling;
 	uniform_sampling.setInputCloud(cloud);
 	uniform_sampling.setRadiusSearch(0.0006);
@@ -950,20 +585,6 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 			// hull.setDimension (2); // not necessarily needed, but we need to check the dimensionality of the output
 			hull.setInputCloud(cloud_plane);
 			hull.reconstruct(*hull_points);
-/*
-			if (false)//(hull.getDimension() == 2)
-			{
-				if (debug) cout << "using prism to remove outlier" << endl;
-				pcl::ExtractPolygonalPrismData<pcl::PointXYZRGBA> prism;
-				prism.setInputCloud(cloud_filtered);
-				prism.setInputPlanarHull(hull_points);
-				prism.setHeightLimits(z_min, z_max);
-
-				prism.segment(*inliers);
-			}
-			else
-				PCL_ERROR("The input cloud does not represent a planar surface.\n");
-			*/
 
 		}
 
@@ -1034,19 +655,6 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 				cloud->push_back(cloud_cluster->points[b]);
 			}
 		}
-		//	viewer3.addPointCloud(cloud_cluster, "instance" + to_string(j));
-		//viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "instance");
-		//viewer3.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "instance" + to_string(j));
-
-
-		//while (!viewer3.wasStopped())
-		//{
-		//	viewer3.spinOnce(100);
-		//	//		viewer4.spinOnce(100);
-
-		//}
-
-
 
 		j++;
 	}
@@ -1056,7 +664,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 	return cloud;
 
 }
-pcl::PointCloud<pcl::PointXYZRGBA>::Ptr changeAlittle(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud){
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr changeAlittle(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud) {
 	for (size_t i = 0; i < cloud->size(); i++)
 	{
 		cloud->points[i].r = 0;
@@ -1077,14 +685,9 @@ public:
 
 			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 			if (debug) cout << "new cloud" << endl;
-			//processCloud(modelCloud);
-			//modelCloud
+
 			std::vector<int> indices;
 			pcl::removeNaNFromPointCloud(*cloud, *modelCloud, indices);
-			//savePointCloudsPLY("C:\\Users\\ahmad\\Desktop\\scene\\scene.ply", modelCloud, NULL);
-
-			//vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> returnedClouds;
-			//returnedClouds = processCloud(modelCloud);
 			viewer.showCloud(processCloud(modelCloud));
 
 
@@ -1117,7 +720,7 @@ public:
 	pcl::visualization::CloudViewer viewer;
 };
 
-pcl::PointCloud<pcl::PointXYZRGBA>::Ptr generateSceneCloudsFromRGBD(string path){
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr generateSceneCloudsFromRGBD(string path) {
 
 
 
@@ -1136,12 +739,6 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr generateSceneCloudsFromRGBD(string path)
 	cv::Mat colorImg = cv::imread(colorFilename, CV_LOAD_IMAGE_COLOR);
 	cv::cvtColor(colorImg, colorImg, CV_BGR2RGB); //this will put colors right
 
-
-
-
-
-	//cout << "Transformation matrix" << endl << poseMat << endl;
-
 	// Setting camera intrinsic parameters of depth camera
 	float focalx = 539.8100;  // focal length
 	float focaly = 539.8300;
@@ -1150,10 +747,6 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr generateSceneCloudsFromRGBD(string path)
 
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr modelCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
-
-
-
-	//	pcl::CentroidPoint<pcl::PointXYZRGBA> centroid;
 
 
 	//Create point clouds from depth image and color image using camera intrinsic parameters
@@ -1206,15 +799,15 @@ int main(int argc, char** argv)
 			std::cerr << "Teamname directory created: " << dirTeamName << std::endl;
 		}
 
-		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/bird.ply", *birdCloud) == -1){ PCL_ERROR("Couldn't read file birdCloud.ply \n"); return (-1); }
+		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/bird.ply", *birdCloud) == -1) { PCL_ERROR("Couldn't read file birdCloud.ply \n"); return (-1); }
 		std::cout << "Loaded" << birdCloud->width * birdCloud->height << "points" << std::endl;
-		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/can.ply", *canCloud) == -1){ PCL_ERROR("Couldn't read file can.ply \n"); return (-1); }
+		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/can.ply", *canCloud) == -1) { PCL_ERROR("Couldn't read file can.ply \n"); return (-1); }
 		std::cout << "Loaded" << canCloud->width * canCloud->height << "points" << std::endl;
-		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/shoe.ply", *shoeCloud) == -1){ PCL_ERROR("Couldn't read file shoe.ply \n"); return (-1); }
+		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/shoe.ply", *shoeCloud) == -1) { PCL_ERROR("Couldn't read file shoe.ply \n"); return (-1); }
 		std::cout << "Loaded" << shoeCloud->width * shoeCloud->height << "points" << std::endl;
-		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/house.ply", *houseCloud) == -1){ PCL_ERROR("Couldn't read file house.ply \n"); return (-1); }
+		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/house.ply", *houseCloud) == -1) { PCL_ERROR("Couldn't read file house.ply \n"); return (-1); }
 		std::cout << "Loaded" << houseCloud->width * houseCloud->height << "points" << std::endl;
-		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/cracker.ply", *crackerCloud) == -1){ PCL_ERROR("Couldn't read file crackerCloud.ply \n"); return (-1); }
+		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>(mainModelsPath + "/cracker.ply", *crackerCloud) == -1) { PCL_ERROR("Couldn't read file crackerCloud.ply \n"); return (-1); }
 		std::cout << "Loaded" << crackerCloud->width * crackerCloud->height << "points" << std::endl;
 
 		pcl::console::print_highlight("Downsampling...\n");
@@ -1273,22 +866,6 @@ int main(int argc, char** argv)
 	}
 
 
-	/*pcl::visualization::PCLVisualizer viewer3("clustered instances");
-	//viewer3.addPointCloud(birdCloud, "birdCloud");
-	//viewer3.addPointCloud(canCloud, "canCloud");
-	//viewer3.addPointCloud(shoeCloud, "shoeCloud");
-	viewer3.addPointCloud(houseCloud, "houseCloud");
-	//viewer3.addPointCloud(crackerCloud, "crackerCloud");
-
-
-
-	while (!viewer3.wasStopped())
-	{
-	viewer3.spinOnce(100);
-
-
-	}
-	*/
 
 	if (live)
 	{
@@ -1297,21 +874,7 @@ int main(int argc, char** argv)
 		SimpleOpenNIViewer v;
 		v.run();
 	}
-	else{
-
-
-		/*pcl::PointCloud<pcl::PointXYZRGBA>::Ptr scene(new pcl::PointCloud<pcl::PointXYZRGBA>);
-		//"C:\\Users\\ahmad\\Desktop\\scene\\challenge1_5-3.ply"
-		if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>("C:\\Users\\ahmad\\Desktop\\scene\\challenge1_4-0.ply", *scene) == -1){ PCL_ERROR("Couldn't read file scene.ply \n"); return (-1); }
-		std::cout << "Loaded" << scene->width * scene->height << "points" << std::endl;
-
-		pcl::visualization::PCLVisualizer viewer3("scene instances");
-		viewer3.addPointCloud(processCloud(scene), "scene");
-		while (!viewer3.wasStopped())
-		{
-		viewer3.spinOnce(100);
-		}*/
-
+	else {
 
 
 		for (auto modelsIT : directory_iterator(scenesRGBDMainPath))
@@ -1325,7 +888,7 @@ int main(int argc, char** argv)
 			string modelRGBDir = modelPathIT + "/rgb/";
 			string modelDepthDir = modelPathIT + "/depth/";
 			challengeName = modelName;
-			if (debug){
+			if (debug) {
 				cout << "###################################################################" << endl;
 				cout << "scenesRGBDMainPath" << scenesRGBDMainPath << endl; //points to /test
 				cout << "challengeName" << challengeName << endl;//01 , 02 ...etc
@@ -1357,22 +920,6 @@ int main(int argc, char** argv)
 
 			}
 		}
-
-
-
-
-		/*pcl::PointCloud<pcl::PointXYZRGBA>::Ptr scene(new pcl::PointCloud<pcl::PointXYZRGBA>);
-//"C:\\Users\\ahmad\\Desktop\\scene\\challenge1_5-3.ply"
-if (pcl::io::loadPLYFile<pcl::PointXYZRGBA>("C:\\Users\\ahmad\\Documents\\newscenes\\07-9.ply", *scene) == -1){ PCL_ERROR("Couldn't read file scene.ply \n"); return (-1); }
-std::cout << "Loaded" << scene->width * scene->height << "points" << std::endl;
-
-pcl::visualization::PCLVisualizer viewer3("scene instances");
-viewer3.addPointCloud(processCloud(scene), "scene");
-while (!viewer3.wasStopped())
-{
-viewer3.spinOnce(100);
-}
-}*/
 
 	}
 
