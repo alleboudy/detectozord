@@ -1,10 +1,10 @@
 
 ![El Detectozord](https://github.com/alleboudy/pointnet/blob/master/doc/eldetectozord.png?raw=true "El detectoZord")
 
-## This repository is a toolbox for using pcl and tensorflow in computer vision(Apologies for the experimental code)
-### "Segmentation" is a pipeline that utilizes pcl to grab 3d pointcloud from a depth sensor, apply SAC segmentation to remove large flat surfaces, exctract candidate instances from the scene via pcl euclidean cluster extraction, classify them using pointnet into predefined set of objects then estimate their poses through pcl SampleConsensusPrerejective 
-### running segmentation requires first clone the pointnet forked repository "please read down for more info" into segmentation/data/pointnet and  running the flask classification server onlineClassify.py 
-## prerequisites used:
+## This repository is a sandbox for using pcl and tensorflow in computer vision (Apologies for the experimental code)
+#### "Segmentation" is a pipeline that utilizes pcl to grab 3d pointclouds from a depth sensor, apply SAC segmentation to remove large flat surfaces, exctract candidate instances from the scene via pcl euclidean cluster extraction, classify them using pointnet into predefined set of objects then estimate their poses through pcl SampleConsensusPrerejective 
+
+## Packages used:
 ```
 python 3.5 x64
 
@@ -43,15 +43,16 @@ pip install flask
 ```
 
 
-## TODO: refine the pose estimation step and report only the yml of the highest convergence score.
+### TODO: refine the pose estimation step and report only the yml of the highest convergence score.
 Also, cleaning up and moving flags outside of the code ex: in main.cpp live=true will grab RGB and depth images from a connected OpenNI sensor instead of loading static scenes 
 
 ## PointNet work is being done here ->
 https://github.com/alleboudy/pointnet Classification, OneVsAllClassification, and pose regresssion
 
-## In /utils you can fibd methods to create point clouds .ply files from given RGB D images, it does the translation to origin and sets the clouds in unit bounding box which is a mandatory preprocessing step for pointnet training.
+### In /utils...
+One can fibd methods to create point clouds .ply files from given RGB D images, it does the translation to origin and sets the clouds in unit bounding box which is a mandatory preprocessing step for pointnet training.
 
-### Challenge 1 notes - UPDATED:
+#### Challenge 1 notes - UPDATED:
 
 please disable the viewers if necessary for a faster running, sorry didn't make it in time before the deadline
 
@@ -59,7 +60,7 @@ please don't mind the correspondeces viewer, it is broken
 
 
 
-#### a pure PCL Detection pipeline:
+#### A pure PCL Detection pipeline:
 
 Our pipeline under challenge_I is used to detect models in given scenes
 
@@ -85,7 +86,7 @@ the implementation of greedy is left commented in both problems for validation
 We still need to better tune the parameters of the pipeline, however. 
 
 ### Exercise6 notes:
-point clouds registeration examples
+Point clouds registeration examples
 issues with the parameters are fixed for Ex6.2 and it perfectly aligens.
 
 
