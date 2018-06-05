@@ -51,24 +51,15 @@ https://github.com/alleboudy/pointnet Classification, OneVsAllClassification, an
 
 ## In /utils you can fibd methods to create point clouds .ply files from given RGB D images, it does the translation to origin and sets the clouds in unit bounding box which is a mandatory preprocessing step for pointnet training.
 
-## more details about the exercises will be added later 
 ### Challenge 1 notes - UPDATED:
-Unfortunately, we haven't finished the classifier yet
 
 please disable the viewers if necessary for a faster running, sorry didn't make it in time before the deadline
 
 please don't mind the correspondeces viewer, it is broken
 
-We didn't find fine parameters for the can, will hopefully do for the fuurther steps
-
-Thank you.
 
 
-
-### Challenge1 notes:
-
-
-#### Strategy:
+#### a pure PCL Detection pipeline:
 
 Our pipeline under challenge_I is used to detect models in given scenes
 
@@ -77,48 +68,42 @@ For each model, a set of parameters are to be tuned
 Given a model to detect, we use PointNet to first classify and recognize the model to load the correct set of parameters for the detection pipeline
 
 
-#### TODO(in progress):
+#### Tips for building training sets:
 
-Train the PointNet model on the data provided under train
-
-1-First in the main directory, util is a tool to turn the depth and rgb images we have per model into pointclouds in .ply files to be used to train PointNet
+1-In the main directory, util is a tool to turn the depth and rgb images we have per model into pointclouds in .ply files to be used to train PointNet
 
 2-Using the script under pointnet/utils/ challenge_prep.py one can generate .h5 of the .ply files we have to be used for training and testing 
 
-3-training pointnet on our data and attaching a script to classify clouds at the top of the detection pipeline to be called to load the right parameters
 
-5- still need to find good parameters for house, bond, pot and shoe :S
-
-
-#### TODO(next):
-
-We are matching 3d models to 2.5d scenes, which is not practically good, we need to instead take parts of the models for the matching, 
-
-one proposed strategy is: slicing the model on the model one time per axis and taking the resulting half for the matching [means we will match 6 different halves of the model]
-
-add normals and RGB data to pointnet
 
 ### Exercise7 notes:
+
+Feature matching in 3D and pose estimation
 
 After multiple tries we settled on using global hypothesis verification instead of the greedy one 
 the implementation of greedy is left commented in both problems for validation
 We still need to better tune the parameters of the pipeline, however. 
 
 ### Exercise6 notes:
-issues with the parameters are fixed for Ex6.2 and it perfectly aligens, however, ex6.3 aren't perfectly aligned unfortunately, would appreciate any pointers or guidelines, thanks.
+point clouds registeration examples
+issues with the parameters are fixed for Ex6.2 and it perfectly aligens.
 
 
 ### Exercise5 notes:
+
+Acquiring pointclouds through a kinict sensor using OpenNI2
+
 data/outcomes includes sample outcomes
 
 ### Exercise4 notes:
-Visualization.ipynb is for problem number 4 Feature Visualization in the exercise
-
-under ssd/ is demo.py for problem number 5
+Another dive into tensorflow, focusing on object detection in 2D images
+Visualization.ipynb uses a pretrained model to detect objects in images by sliding accorss the images with a dark window and computing the cross entropy between the acquired logits from the original image and the masked image with the window then coloring the original image depending on the entropy value
+under ssd/ is demo.py for object detection using SSD
 
 ### Exercise3 notes:
+A quick dive into tensorflow
 the training notebook now is up to date, also the prediction notebook,
-however training.py is used for training and modifiedutils, is using python 2 , apologies for this
+however training.py is used for training and modifiedutils, is using python 2 
 
 ### Exercise2 notes:
 2D flat objects feature matching between a template and an image, detecting features, representing them,matching and computing homography to align the template on the corresponding matched object in the image 
