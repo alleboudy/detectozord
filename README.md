@@ -2,7 +2,7 @@
 ![El Detectozord](https://github.com/alleboudy/pointnet/blob/master/doc/eldetectozord.png?raw=true "El detectoZord")
 
 ## This repository is a sandbox for using pcl and tensorflow in computer vision (Apologies for the experimental code)
-#### "Segmentation" is a pipeline that utilizes pcl to grab 3d pointclouds from a depth sensor, apply SAC segmentation to remove large flat surfaces, exctract candidate instances from the scene via pcl euclidean cluster extraction, classify them using pointnet into predefined set of objects then estimate their poses through pcl SampleConsensusPrerejective 
+#### "Segmentation" is a pipeline that utilizes pcl to grab 3d pointclouds from a depth sensor, apply SAC segmentation to remove large flat surfaces, exctract candidate instances of predefined 3D models in segmentation/data/models from the scene via pcl euclidean cluster extraction, classify them using pointnet into predefined set of objects then estimate their poses through pcl SampleConsensusPrerejective 
 
 ## Packages used:
 ```
