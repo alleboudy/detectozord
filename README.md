@@ -121,9 +121,13 @@ the training notebook now is up to date, also the prediction notebook,
 however training.py is used for training and modifiedutils, is using python 2 , apologies for this
 
 ### Exercise2 notes:
+2D flat objects feature matching between a template and an image, detecting features, representing them,matching and computing homography to align the template on the corresponding matched object in the image 
+
 Please note that:
 THRESHOLD variable is defined and used to skip further processing if the number
 of inlier matches is less than it, we found that using a radically different tem
 plate from the image in the scene results in very little matching keypoints and thus poor homography
 
+### Exercise1 notes:
+Simple image reading and filters using OpenCV
 
