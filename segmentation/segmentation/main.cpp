@@ -54,6 +54,13 @@
 #include <boost/iostreams/stream.hpp>
 
 
+
+
+#include <cstdlib>
+
+
+
+
 using namespace std;
 using namespace cv;
 using namespace boost::filesystem;
@@ -65,6 +72,11 @@ bool debug = false;
 bool live = false;
 bool doAlignment = false;
 std::string projectSrcDir = PROJECT_SOURCE_DIR;
+
+
+HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);//handling console color for shapenet shapes
+
+int consoleColr = 0;
 
 string locationForOutputClouds = projectSrcDir + "/data/temoclouds/";// location for temp out clouds passed for classification
 // Read in the cloud data
@@ -80,6 +92,9 @@ string teamOutput = projectSrcDir + "/data/teamoutput";//where the models exist
 string dirChallenge = "";
 string  colorSceneFilename = "";
 string  challengeName = "";
+
+
+
 
 
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr birdCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
@@ -220,6 +235,13 @@ bool savePointCloudsPLY(string filename, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
 }
 
 
+string toBinary(int n)
+{
+	string r;
+	while (n != 0) { r = (n % 2 == 0 ? "0" : "1") + r; n /= 2; }
+	return r;
+}
+
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::PointIndices>::const_iterator it, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_filtered, int j, pcl::PointCloud<pcl::Normal>::Ptr cloud_filtered_normal) {
 	clock_t tStart = clock();
 
@@ -239,7 +261,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 
 	//densifying the clouds?
 
-	if (cloud_cluster->size() < 512)
+	/*if (cloud_cluster->size() < 512)
 	{
 		return NULL;
 		//pcl::MovingLeastSquares<pcl::PointXYZRGBA, pcl::PointXYZRGBA> mls;
@@ -253,7 +275,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 		//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_smoothed(new pcl::PointCloud<pcl::PointXYZRGBA>());
 		//mls.process(*cloud_cluster);
 		//if (debug) cout << "upsampled cloud" << cloud_cluster->size() << endl;
-	}
+	}*/
 
 
 
@@ -353,6 +375,26 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 		currentModel = shoeCloud;
 		reducedcurrentModel = reducedshoeCloud;
 		currentModelNormals = shoeNormals;
+
+
+	}
+	else
+	{
+		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+		
+		
+		SetConsoleTextAttribute(hConsole, ++consoleColr);
+		cout << labels[0] << endl;
+		string binclr = toBinary(consoleColr);
+		while (binclr.size()<3) {
+			binclr = "0" + binclr;
+
+		}
+		r = int(binclr[0])*128;
+		g = int(binclr[1]) * 128;//0 + (std::rand() % (255 - 0 + 1));
+		b = int(binclr[2]) * 128;// 0 + (std::rand() % (255 - 0 + 1));
+
 
 
 	}
@@ -631,16 +673,12 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr  processCloud(pcl::PointCloud<pcl::Point
 	ne.compute(*cloud_filtered_normal);
 
 
-
-
+	consoleColr = 0;
+	if (system("CLS")) system("clear");
 	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
 	{
 
 		//THREADS should be created here!
-
-
-
-
 
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_cluster = handleDetectedCluster(it, cloud_filtered, j, cloud_filtered_normal);
 
