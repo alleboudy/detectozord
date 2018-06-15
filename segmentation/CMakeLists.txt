@@ -13,6 +13,14 @@ add_compile_options(-std=c++11)
 # Find modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
+##cpprestsdk
+
+find_package(cpprestsdk REQUIRED)
+if(CPPRESTSDK_FOUND)
+	link_directories(PRIVATE cpprestsdk::cpprest cpprestsdk::cpprestsdk_zlib_internal cpprestsdk::cpprestsdk_boost_internal cpprestsdk::cpprestsdk_openssl_internal)
+	
+endif(CPPRESTSDK_FOUND)
+
 ## OpenCV
 find_package(OpenCV 3.0 REQUIRED)
 if(OpenCV_INCLUDE_DIRS)
@@ -25,8 +33,6 @@ find_package(Eigen3 REQUIRED)
 if(EIGEN3_INCLUDE_DIR)
     include_directories(${EIGEN3_INCLUDE_DIR})
 endif(EIGEN3_INCLUDE_DIR)
-
-
 
 ## PCL
 find_package(PCL)
@@ -44,4 +50,5 @@ add_definitions( -DPROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"  )
 ###########################################################################################
 # TARGETS
 ADD_SUBDIRECTORY(segmentation)
+
 

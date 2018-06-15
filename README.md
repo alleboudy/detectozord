@@ -25,6 +25,10 @@ pip install matplotlib
 ```
 pip install flask
 ```
+we are also now using Microsot's cpprestsdk to send post requests to the classification server instead of the python requestclassify.py
+
+https://github.com/Microsoft/cpprestsdk/wiki/Getting-Started-Tutorial
+
 
 ### Running the Segmentation pipeline
 ```

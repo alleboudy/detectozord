@@ -4,7 +4,6 @@
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/normal_3d.h>
-#include <pcl/kdtree/kdtree.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
@@ -13,52 +12,47 @@
 #include <string>
 #include <pcl/io/ply_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/surface/on_nurbs/fitting_surface_tdm.h>
 #include <pcl/surface/on_nurbs/fitting_curve_2d_asdm.h>
 #include <pcl/surface/on_nurbs/triangulation.h>
-#include <pcl/segmentation/extract_polygonal_prism_data.h>
 #include <pcl/surface/convex_hull.h>
 #include <pcl/registration/icp.h>
-#include <pcl/features/normal_3d_omp.h>
 #include <pcl/features/shot_omp.h>
-#include <pcl/features/board.h>
 #include <pcl/recognition/hv/greedy_verification.h>
 // including opencv2 headers
 #include <opencv2/imgproc.hpp>
 #include "opencv2/opencv.hpp"
 #include "opencv2/highgui/highgui.hpp"
-#include <pcl/surface/mls.h>
 #include <pcl/surface/poisson.h>
-#include <pcl/io/vtk_io.h>
-#include <pcl/features/normal_3d_omp.h>
 #include <pcl/filters/uniform_sampling.h>
-#include <pcl/recognition/cg/geometric_consistency.h>
 #include <pcl/io/openni2_grabber.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/registration/sample_consensus_prerejective.h>
-
-#include <OpenNI.h>
-#include <PS1080.h>
-#include<cmath>
+//#include <OpenNI.h>
 #include <Eigen/Dense>
 #include <thread>
-
 // writing into a file
 #include <ostream>
 #include <vector>
-#include <algorithm>
 #include <iterator>
 #include <memory>
 #include <iostream>
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/stream.hpp>
 
-
+//cpprestsdk
+#include <cpprest/http_client.h>
+#include <cpprest/filestream.h>
+#include <cpprest/containerstream.h>
 
 
 #include <cstdlib>
+#include <codecvt>
 
-
+using namespace utility;                    // Common utilities like string conversions
+using namespace web;                        // Common features like URIs.
+using namespace web::http;                  // Common HTTP functionality
+using namespace web::http::client;          // HTTP client features
+using namespace concurrency::streams;       // Asynchronous streams
 
 
 using namespace std;
@@ -89,9 +83,9 @@ string mainModelsPath = projectSrcDir + "/data/models";//where the models exist
 string teamOutput = projectSrcDir + "/data/teamoutput";//where the models exist
 
 
-string dirChallenge = "";
-string  colorSceneFilename = "";
-string  challengeName = "";
+string dir_challenge = "";
+string  color_scene_filename = "";
+string  challenge_name = "";
 
 
 
@@ -148,15 +142,12 @@ std::string exec(string path2classifier, string path2plyFile, string flag, std::
 			result += buffer.data();
 	}
 
-	char delim = '\n';
-	vector<string>alllines;
-	alllines = split(result, delim);
+	auto delim = '\n';
+	auto alllines = split(result, delim);
 	delim = ',';
-	for (size_t i = 0; i < alllines.size(); i++)
+	for (const auto& allline : alllines)
 	{
-		vector<string>line;
-
-		line = split(alllines[i], delim);
+		auto line = split(allline, delim);
 		paths.push_back(line[0]);
 		labels.push_back(line[1]);
 
@@ -166,16 +157,16 @@ std::string exec(string path2classifier, string path2plyFile, string flag, std::
 }
 
 // Convert to colored depth image
-cv::Mat convColoredDepth(cv::Mat& depthImg, float minThresh = 0, float maxThresh = 0) {
-	cv::Mat coloredDepth = depthImg.clone();
+cv::Mat convColoredDepth(cv::Mat& depthImg, float min_thresh = 0, float maxThresh = 0) {
+	auto coloredDepth = depthImg.clone();
 
 	double min;
 	double max;
-	if (minThresh == 0 && maxThresh == 0) {
+	if (min_thresh == 0 && maxThresh == 0) {
 		cv::minMaxIdx(depthImg, &min, &max);
 	}
 	else {
-		min = minThresh;
+		min = min_thresh;
 		max = maxThresh;
 	}
 	coloredDepth -= min;
@@ -195,11 +186,11 @@ bool savePointCloudsPLY(string filename, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
 		return false;
 	}
 
-	int pointNum = points->size();
+	int point_num = points->size();
 
 	fout << "ply" << endl;
 	fout << "format ascii 1.0" << endl;
-	fout << "element vertex " << pointNum << endl;
+	fout << "element vertex " << point_num << endl;
 	fout << "property float x" << endl;
 	fout << "property float y" << endl;
 	fout << "property float z" << endl;
@@ -216,12 +207,12 @@ bool savePointCloudsPLY(string filename, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
 	fout << "property uchar alpha" << endl;
 	fout << "end_header" << endl;
 
-	for (int i = 0; i < pointNum; i++) {
+	for (int i = 0; i < point_num; i++) {
 
 
 
 		fout << points->at(i).x << " " << points->at(i).y << " " << points->at(i).z;
-		if (normals != NULL)
+		if (normals != nullptr)
 			fout << " " << normals->at(i).normal_x << " " << normals->at(i).normal_y << " " << normals->at(i).normal_z;
 		else
 			fout << " " << 0 << " " << 0 << " " << 0;
@@ -235,19 +226,59 @@ bool savePointCloudsPLY(string filename, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
 }
 
 
-string toBinary(int n)
+string to_binary(int n)
 {
 	string r;
 	while (n != 0) { r = (n % 2 == 0 ? "0" : "1") + r; n /= 2; }
 	return r;
 }
 
+// Creates an HTTP request and prints part of its response stream.
+pplx::task<void> HTTPStreamingAsync(string ply)
+{
+	http_client client(L"http://192.168.178.58:5070/");
+	http_request req(methods::POST);
+	req.set_body(ply);
+
+	return client.request(req).then([](http_response response)
+	{
+		/*if (response.status_code() != status_codes::OK)
+		{
+			// Handle error cases... 
+			return pplx::task_from_result();
+		}*/
+
+		// Perform actions here reading from the response stream... 
+		// In this example, we print the first 15 characters of the response to the console.
+		concurrency::streams::istream bodyStream = response.body();
+		container_buffer<std::string> inStringBuffer;
+		return bodyStream.read(inStringBuffer, 15).then([inStringBuffer](size_t bytesRead)
+		{
+			const std::string &text = inStringBuffer.collection();
+
+			// For demonstration, convert the response text to a wide-character string.
+			std::wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> utf16conv;
+			std::wostringstream ss;
+			ss << utf16conv.from_bytes(text.c_str()) << std::endl;
+			cout << ss.str();
+		});
+	});
+
+	/* Output:
+	<!DOCTYPE html>
+	*/
+}
+
+
+
+
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::PointIndices>::const_iterator it, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_filtered, int j, pcl::PointCloud<pcl::Normal>::Ptr cloud_filtered_normal) {
-	clock_t tStart = clock();
+	HTTPStreamingAsync("lalala");
+	clock_t t_start = clock();
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGBA>);
-	for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit)
-		cloud_cluster->points.push_back(cloud_filtered->points[*pit]); //*
+	for (std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>::value_type indice : it->indices)
+		cloud_cluster->points.push_back(cloud_filtered->points[indice]); //*
 	cloud_cluster->width = cloud_cluster->points.size();
 	cloud_cluster->height = 1;
 	cloud_cluster->is_dense = true;
@@ -278,9 +309,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 	}*/
 
 
-
-
-	string plyPath = locationForOutputClouds + "cloud_cluster_" + to_string(j) + ".ply";
+	auto ply_path = locationForOutputClouds + "cloud_cluster_" + to_string(j) + ".ply";
 
 	pcl::PointCloud<pcl::Normal>::Ptr cluster_normal(new pcl::PointCloud<pcl::Normal>);
 	pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
@@ -294,11 +323,15 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 
 
 
-	savePointCloudsPLY(plyPath, cloud_cluster, cluster_normal);
+	savePointCloudsPLY(ply_path, cloud_cluster, cluster_normal);
 
 	std::vector<std::string> paths;
 	std::vector<std::string> labels;
-	string res = exec(path2classifier, plyPath, "--ply_path ", paths, labels);
+
+
+
+
+	string res = exec(path2classifier, ply_path, "--ply_path ", paths, labels);
 
 
 	if (debug) cout << labels[0] << ":" << paths[0] << endl;
@@ -313,7 +346,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr reducedcurrentModel(new pcl::PointCloud<pcl::PointXYZRGBA>);
 	pcl::PointCloud<pcl::Normal>::Ptr currentModelNormals(new pcl::PointCloud<pcl::Normal>);
 
-	string objID = "";
+	string objID;
 
 	int r = 0, g = 0, b = 0;
 	if (labels[0] == "bird")
@@ -386,7 +419,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 		
 		SetConsoleTextAttribute(hConsole, ++consoleColr);
 		cout << labels[0] << endl;
-		string binclr = toBinary(consoleColr);
+		string binclr = to_binary(consoleColr);
 		while (binclr.size()<3) {
 			binclr = "0" + binclr;
 
@@ -496,18 +529,18 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 
 
 			// out writes to file XXXX_YY.txt
-			double timeTaken = (double)(((double)(clock() - tStart)) / CLOCKS_PER_SEC);
-			string path2output = teamOutput + "/" + challengeName;
+			double timeTaken = (double)(((double)(clock() - t_start)) / CLOCKS_PER_SEC);
+			string path2output = teamOutput + "/" + challenge_name;
 			if (boost::filesystem::create_directory(path2output))
 			{
 				std::cerr << "path2output created: " << path2output << std::endl;
 			}
 
-			string outputFileName = path2output + "/" + colorSceneFilename + "_" + objID + "__" + to_string(j) + ".yml";
+			string outputFileName = path2output + "/" + color_scene_filename + "_" + objID + "__" + to_string(j) + ".yml";
 
 			if (debug) {
 				cout << "outputFileName" << outputFileName << endl;
-				cout << "colorSceneFilename" << colorSceneFilename << endl;
+				cout << "colorSceneFilename" << color_scene_filename << endl;
 				cout << "path2output" << path2output << endl;
 
 			}
@@ -920,17 +953,17 @@ int main(int argc, char** argv)
 
 			string modelPathIT = modelsIT.path().string();//path to a model folder, e.g. bird
 			boost::replace_all(modelPathIT, "\\", "/");
-			dirChallenge = modelPathIT;
+			dir_challenge = modelPathIT;
 
 			string modelName = modelPathIT.substr(modelPathIT.find_last_of("/") + 1);
 			string modelRGBDir = modelPathIT + "/rgb/";
 			string modelDepthDir = modelPathIT + "/depth/";
-			challengeName = modelName;
+			challenge_name = modelName;
 			if (debug) {
 				cout << "###################################################################" << endl;
 				cout << "scenesRGBDMainPath" << scenesRGBDMainPath << endl; //points to /test
-				cout << "challengeName" << challengeName << endl;//01 , 02 ...etc
-				cout << "dirChallenge" << dirChallenge << endl;
+				cout << "challengeName" << challenge_name << endl;//01 , 02 ...etc
+				cout << "dirChallenge" << dir_challenge << endl;
 				cout << "###################################################################" << endl;
 
 			}
@@ -943,8 +976,8 @@ int main(int argc, char** argv)
 			for (boost::filesystem::directory_entry it : directory_iterator(modelRGBDir))
 			{
 
-				colorSceneFilename = it.path().string().substr(it.path().string().find_last_of("/") + 1);
-				boost::replace_all(colorSceneFilename, ".png", "");
+				color_scene_filename = it.path().string().substr(it.path().string().find_last_of("/") + 1);
+				boost::replace_all(color_scene_filename, ".png", "");
 
 				//modelIndex++;
 				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr scene = processCloud(generateSceneCloudsFromRGBD(it.path().string()));
