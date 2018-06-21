@@ -12,7 +12,6 @@
 #include <string>
 #include <pcl/io/ply_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/surface/on_nurbs/fitting_curve_2d_asdm.h>
 #include <pcl/surface/on_nurbs/triangulation.h>
 #include <pcl/surface/convex_hull.h>
 #include <pcl/registration/icp.h>
@@ -22,7 +21,6 @@
 #include <opencv2/imgproc.hpp>
 #include "opencv2/opencv.hpp"
 #include "opencv2/highgui/highgui.hpp"
-#include <pcl/surface/poisson.h>
 #include <pcl/filters/uniform_sampling.h>
 #include <pcl/io/openni2_grabber.h>
 #include <pcl/visualization/cloud_viewer.h>
@@ -76,7 +74,7 @@ string locationForOutputClouds = projectSrcDir + "/data/temoclouds/";// location
 // Read in the cloud data
 
 string path2classifier = projectSrcDir + "/data/pointnet/";//where my fork of pointnet exists
-
+auto classificationServerURL = L"http://192.168.178.58:5070/";
 string scenesRGBDMainPath = projectSrcDir + "/data/test/";//where the folders of the test scenes exist
 string mainModelsPath = projectSrcDir + "/data/models";//where the models exist
 
@@ -131,6 +129,71 @@ std::vector<std::string> split(const std::string &s, char delim) {
 	return elems;
 }
 
+
+// Creates an HTTP request and prints part of its response stream.
+pplx::task<string> HTTPStreamingAsync(const string ply)
+{
+	
+	http_client client(classificationServerURL);
+	http_request req(methods::POST);
+	req.set_body(ply);
+	//auto resp = client.request(req);
+	//auto r = resp.get();
+
+	return client.request(req).then([](http_response response)
+	{
+		/*if (response.status_code() != status_codes::OK)
+		{
+		// Handle error cases...
+		return pplx::task_from_result();
+		}*/
+
+		// Perform actions here reading from the response stream... 
+		// In this example, we print the first 15 characters of the response to the console.
+		concurrency::streams::istream bodyStream = response.body();
+		container_buffer<std::string> inStringBuffer;
+		return bodyStream.read(inStringBuffer, 100).then([inStringBuffer](size_t bytesRead)
+		{
+			std::string &text
+				= inStringBuffer.collection();
+			//cout << text << endl;
+			return text;
+			// For demonstration, convert the response text to a wide-character string.
+			//	std::wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> utf16conv;
+			//	std::wostringstream ss;
+			//ss << utf16conv.from_bytes(text.c_str()) << std::endl;
+			//result =ss.str();
+		});
+	});
+
+	/* Output:
+	<!DOCTYPE html>
+	*/
+}
+
+
+
+std::string execOnline( string plyFile, std::vector<std::string>& paths, std::vector<std::string>& labels) {
+	
+	std::string result = HTTPStreamingAsync(plyFile).get();
+	char delim = ',';
+	auto alllines = split(result, delim);
+	paths.push_back(alllines[0]);
+	labels.push_back(alllines[1]);/*
+	for (const auto& allline : alllines)
+	{
+		auto line = split(allline, delim);
+		paths.push_back(line[0]);
+		labels.push_back(line[1]);
+
+	}*/
+	//cout << "returnning.." << endl;
+	return result;
+
+}
+
+
+
 std::string exec(string path2classifier, string path2plyFile, string flag, std::vector<std::string>& paths, std::vector<std::string>& labels) {
 	string cmd = "cd " + path2classifier + " & python " + path2classifier + "requestClassification.py " + flag + " " + path2plyFile;
 	std::array<char, 128> buffer;
@@ -174,6 +237,75 @@ cv::Mat convColoredDepth(cv::Mat& depthImg, float min_thresh = 0, float maxThres
 	cv::applyColorMap(coloredDepth, coloredDepth, cv::COLORMAP_JET);
 
 	return coloredDepth;
+}
+class StringBuilder {
+private:
+	std::string main;
+	std::string scratch;
+
+	const std::string::size_type ScratchSize = 1024;  // or some other arbitrary number
+
+public:
+	StringBuilder & append(const std::string & str) {
+		scratch.append(str);
+		if (scratch.size() > ScratchSize) {
+			main.append(scratch);
+			scratch.resize(0);
+		}
+		return *this;
+	}
+
+	const std::string & str() {
+		if (scratch.size() > 0) {
+			main.append(scratch);
+			scratch.resize(0);
+		}
+		return main;
+	}
+};
+
+
+string getPLYDataString( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr points, pcl::PointCloud<pcl::Normal>::Ptr normals)
+{
+	StringBuilder sb;
+	
+
+	int point_num = points->size();
+	sb.append("ply").append("\n");
+	sb.append("format ascii 1.0").append("\n");
+	sb.append("element vertex ").append(to_string(point_num)).append("\n");
+	sb.append("property float x").append("\n");
+	sb.append("property float y").append("\n");
+	sb.append("property float z").append("\n");
+
+	sb.append("property float normal_x").append("\n");
+	sb.append("property float normal_y").append("\n");
+	sb.append("property float normal_z").append("\n");
+
+	sb.append("property uchar red").append("\n");
+	sb.append("property uchar green").append("\n");
+	sb.append("property uchar blue").append("\n");
+	sb.append("property uchar alpha").append("\n");
+	sb.append("end_header").append("\n");
+
+
+
+	for (int i = 0; i < point_num; i++) {
+
+		sb.append(to_string(points->at(i).x)).append(" ").append(to_string(points->at(i).y).append(" ").append(to_string(points->at(i).z)));
+
+		if (normals != nullptr)
+			sb.append(" ").append(to_string(normals->at(i).normal_x)).append(" ").append(to_string(normals->at(i).normal_y).append(" ").append(to_string(normals->at(i).normal_z)));
+
+		else
+			sb.append(" 0 0 0");
+
+		sb.append(" ").append(to_string(static_cast<int>(points->at(i).r))).append(" ").append(to_string(static_cast<int>(points->at(i).g))).append(" ").append(to_string(static_cast<int>(points->at(i).b))).append(" 255\n");
+
+	}
+
+
+	return sb.str();
 }
 
 
@@ -233,47 +365,11 @@ string to_binary(int n)
 	return r;
 }
 
-// Creates an HTTP request and prints part of its response stream.
-pplx::task<void> HTTPStreamingAsync(string ply)
-{
-	http_client client(L"http://192.168.178.58:5070/");
-	http_request req(methods::POST);
-	req.set_body(ply);
-
-	return client.request(req).then([](http_response response)
-	{
-		/*if (response.status_code() != status_codes::OK)
-		{
-			// Handle error cases... 
-			return pplx::task_from_result();
-		}*/
-
-		// Perform actions here reading from the response stream... 
-		// In this example, we print the first 15 characters of the response to the console.
-		concurrency::streams::istream bodyStream = response.body();
-		container_buffer<std::string> inStringBuffer;
-		return bodyStream.read(inStringBuffer, 15).then([inStringBuffer](size_t bytesRead)
-		{
-			const std::string &text = inStringBuffer.collection();
-
-			// For demonstration, convert the response text to a wide-character string.
-			std::wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> utf16conv;
-			std::wostringstream ss;
-			ss << utf16conv.from_bytes(text.c_str()) << std::endl;
-			cout << ss.str();
-		});
-	});
-
-	/* Output:
-	<!DOCTYPE html>
-	*/
-}
-
 
 
 
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::PointIndices>::const_iterator it, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_filtered, int j, pcl::PointCloud<pcl::Normal>::Ptr cloud_filtered_normal) {
-	HTTPStreamingAsync("lalala");
+	//HTTPStreamingAsync("lalala");
 	clock_t t_start = clock();
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGBA>);
@@ -323,15 +419,16 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr handleDetectedCluster(std::vector<pcl::P
 
 
 
-	savePointCloudsPLY(ply_path, cloud_cluster, cluster_normal);
-
+//	savePointCloudsPLY(ply_path, cloud_cluster, cluster_normal);
+	string plyData = getPLYDataString(cloud_cluster, cluster_normal);
 	std::vector<std::string> paths;
 	std::vector<std::string> labels;
 
 
+	string res = execOnline(plyData,  paths, labels);
 
-
-	string res = exec(path2classifier, ply_path, "--ply_path ", paths, labels);
+	
+	//string res = exec(path2classifier, ply_path, "--ply_path ", paths, labels);
 
 
 	if (debug) cout << labels[0] << ":" << paths[0] << endl;
