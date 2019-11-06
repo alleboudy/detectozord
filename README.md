@@ -1,11 +1,7 @@
-# Demo
-
-https://youtu.be/ScUGUCLZF0k
-
 
 ![El Detectozord](https://github.com/alleboudy/pointnet/blob/master/doc/eldetectozord.png?raw=true "El detectoZord")
 
-## This repository is a sandbox for using pcl and tensorflow in computer vision (Apologies for the experimental code)
+## This repository is a sandbox for using pcl and tensorflow in computer vision (experimental code)
 #### "Segmentation" is a pipeline that utilizes pcl to grab 3d pointclouds from a depth sensor, apply SAC segmentation to remove large flat surfaces, exctract candidate instances of predefined 3D models in segmentation/data/models from the scene via pcl euclidean cluster extraction, classify them using pointnet into predefined set of objects then estimate their poses through pcl SampleConsensusPrerejective 
 
 ## Packages used:
@@ -47,7 +43,6 @@ https://github.com/Microsoft/cpprestsdk/wiki/Getting-Started-Tutorial
 
 5- build and run segmentation, to switch it to a realtime set the boolean flag in the main.cpp live=true;
 
-[yup, I need to clean that and get the flags out as parameters, sorry xD]
 ```
 
 
@@ -62,10 +57,7 @@ One can fibd methods to create point clouds .ply files from given RGB D images, 
 
 #### Challenge 1 notes - UPDATED:
 
-please disable the viewers if necessary for a faster running, sorry didn't make it in time before the deadline
-
-please don't mind the correspondeces viewer, it is broken
-
+please disable the viewers if necessary for a faster running
 
 
 #### A pure PCL Detection pipeline:
