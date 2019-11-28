@@ -14,17 +14,9 @@ https://www.python.org/downloads/release/python-350/
 pip install --upgrade https://storage.googleapis.com/tensorflow/windows/cpu/tensorflow-1.0.0-cp35-cp35m-win_amd64.whl
 ```
 ```
-pip install scipy
+pip install scipy image matplotlib flask
 ```
-```
-pip install image
-```
-```
-pip install matplotlib
-```
-```
-pip install flask
-```
+
 we are also now using Microsot's cpprestsdk to send post requests to the classification server instead of the python requestclassify.py
 
 https://github.com/Microsoft/cpprestsdk/wiki/Getting-Started-Tutorial
