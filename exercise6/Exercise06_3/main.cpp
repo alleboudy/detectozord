@@ -31,9 +31,9 @@ int main(int argc, char **argv)
 		// Loading depth image and color image using OpenCV
 		std::string depthFilename = projectSrcDir + "/data/depth/depth" + std::to_string(i) + ".png";
 		std::string colorFilename = projectSrcDir + "/data/color/color" + std::to_string(i) + ".png";
-		Mat depthImg = imread(depthFilename, CV_LOAD_IMAGE_UNCHANGED);
-		Mat colorImg = imread(colorFilename, CV_LOAD_IMAGE_COLOR);
-		cv::cvtColor(colorImg, colorImg, CV_BGR2RGB); //this will put colors right
+		Mat depthImg = imread(depthFilename, IMREAD_UNCHANGED);
+		Mat colorImg = imread(colorFilename, IMREAD_COLOR);
+		cv::cvtColor(colorImg, colorImg, COLOR_BGR2RGB); //this will put colors right
 		// Create point clouds in pcl::PointCloud type from depth image and color image using camera intrinsic parameters
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 

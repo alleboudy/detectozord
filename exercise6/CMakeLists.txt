@@ -14,7 +14,7 @@ add_compile_options(-std=c++11)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 ## OpenCV
-find_package(OpenCV 3.0 REQUIRED)
+find_package(OpenCV 4.0 REQUIRED)
 if(OpenCV_INCLUDE_DIRS)
     include_directories(${OpenCV_INCLUDE_DIRS})
     link_directories(${OpenCV_LIB_DIRS})
@@ -26,17 +26,17 @@ if(EIGEN3_INCLUDE_DIR)
     include_directories(${EIGEN3_INCLUDE_DIR})
 endif(EIGEN3_INCLUDE_DIR)
 
-## OpenNI2
-find_package(openni2)
-if(OPENNI2_FOUND)
-	include_directories(${OPENNI2_INCLUDE_DIR})
-endif(OPENNI2_FOUND)
+# ## OpenNI2
+# find_package(openni2)
+# if(OPENNI2_FOUND)
+# 	include_directories(${OPENNI2_INCLUDE_DIR})
+# endif(OPENNI2_FOUND)
 
-## OpenNI2 linux
-find_package(OPENNI2 REQUIRED)
-if(OPENNI2_INCLUDE_DIR)
-    include_directories(${OPENNI2_INCLUDE_DIR})
-endif(OPENNI2_INCLUDE_DIR)
+# ## OpenNI2 linux
+# find_package(OPENNI2 REQUIRED)
+# if(OPENNI2_INCLUDE_DIR)
+#     include_directories(${OPENNI2_INCLUDE_DIR})
+# endif(OPENNI2_INCLUDE_DIR)
 
 
 ## PCL
